@@ -46,6 +46,13 @@ class WaveRenderer:
             line_width=config.COMPONENT_LINE_WIDTH,
             is_selected=state.selected_panel_index == 0,
         )
+        self._draw_right_info_card(
+            text=(
+                "[UP/DN]: Focus | [LF/RT]: Cycles | "
+                "[TAB/SHIFT+TAB]: Formula | [ESC]: Quit"
+            ),
+            is_selected=state.selected_panel_index == 0,
+        )
 
         relief_tag = (
             " [ACTIVE]" if state.selected_panel_index == 1 else ""
@@ -102,14 +109,44 @@ class WaveRenderer:
             f"PANEL 4: [{state.active_formula_index + 1}/"
             f"{len(FORMULA_CATALOG)}] [{layer_tag}] "
             f"{formula.name}: {formula.shorthand} | "
-            f"RANGE: [{min_value:.3f}, {max_value:.3f}] | "
-            "[UP/DN]: Focus | [LF/RT]: Cycles | [TAB]: Formula"
+            f"RANGE: [{min_value:.3f}, {max_value:.3f}]"
         )
         self._draw_panel(
             panel_index=3,
             wave_data=frame.composite,
             title=result_title,
             line_width=config.COMPOSITE_LINE_WIDTH,
+        )
+
+    def _draw_right_info_card(
+        self,
+        text: str,
+        is_selected: bool,
+    ) -> None:
+        """Draws the controls card at the top-right of the first panel."""
+        text_color = (
+            config.COLOR_SELECTION
+            if is_selected
+            else config.COLOR_TITLE
+        )
+        info_surface = self.font_title.render(text, True, text_color)
+        box_width = info_surface.get_width() + 16
+        box_height = info_surface.get_height() + 6
+        info_card = pygame.Surface(
+            (box_width, box_height),
+            pygame.SRCALPHA,
+        )
+        info_card.fill(config.COLOR_TITLE_CARD)
+
+        info_x = self.width - config.PANEL_TITLE_X - box_width
+        info_y = config.PANEL_TITLE_Y
+        self.screen.blit(info_card, (info_x, info_y))
+        self.screen.blit(
+            info_surface,
+            (
+                info_x + config.PANEL_TITLE_TEXT_X,
+                info_y + config.PANEL_TITLE_TEXT_Y,
+            ),
         )
 
     def _draw_panel(

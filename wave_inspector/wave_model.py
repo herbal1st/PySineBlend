@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 import math
-from typing import Tuple
 import numpy as np
 from numpy.typing import NDArray
 import config
@@ -73,6 +72,30 @@ def build_coordinate_mesh_2d(
     )
 
 
+def build_quantized_mesh_2d(
+    width: int,
+    height: int,
+    tile_size: int,
+) -> CoordinateMesh2D:
+    """Precomputes centroid-quantized coordinate and radial distance grids."""
+    base_mesh = build_coordinate_mesh_2d(width, height)
+    x_q = quantize_coordinates(base_mesh.x_norm, width, tile_size)
+    y_q = quantize_coordinates(base_mesh.y_norm, height, tile_size)
+
+    aspect: float = float(width) / float(height)
+    xc = (x_q - 0.5) * aspect
+    yc = y_q - 0.5
+    raw_r = np.sqrt((xc * xc) + (yc * yc))
+    max_r = math.sqrt((0.5 * aspect) ** 2 + 0.5**2)
+    r_q = (raw_r / float(max_r)).astype(np.float32)
+
+    return CoordinateMesh2D(
+        x_norm=x_q,
+        y_norm=y_q,
+        r_norm=r_q,
+    )
+
+
 def _evaluate_sine_grid(
     coords: NDArray[np.float32],
     cycles: float,
@@ -124,33 +147,11 @@ def build_wave_frame_2d(
     base_cycles: float,
     relief_cycles: float,
     crust_cycles: float,
-    tile_stepping: bool = False,
-    tile_size: int = config.DEFAULT_TILE_SIZE,
 ) -> NDArray[np.float32]:
     """Evaluates 2D wave interference according to active projection mode."""
     x_grid = mesh.x_norm
     y_grid = mesh.y_norm
     r_grid = mesh.r_norm
-
-    if tile_stepping:
-        x_grid = quantize_coordinates(
-            coords=x_grid,
-            dimension_size=config.SCREEN_WIDTH,
-            tile_size=tile_size,
-        )
-        y_grid = quantize_coordinates(
-            coords=y_grid,
-            dimension_size=config.SCREEN_HEIGHT,
-            tile_size=tile_size,
-        )
-        aspect: float = (
-            float(config.SCREEN_WIDTH) / float(config.SCREEN_HEIGHT)
-        )
-        xc = (x_grid - 0.5) * aspect
-        yc = y_grid - 0.5
-        raw_r = np.sqrt((xc * xc) + (yc * yc))
-        max_r = math.sqrt((0.5 * aspect) ** 2 + 0.5**2)
-        r_grid = (raw_r / float(max_r)).astype(np.float32)
 
     zeros = np.zeros_like(x_grid)
 

@@ -1,5 +1,6 @@
 """Application loop coordinating input, wave math, and renderers."""
 
+from typing import Dict
 import numpy as np
 from numpy.typing import NDArray
 import pygame
@@ -11,6 +12,7 @@ from wave_inspector.state import InspectorState
 from wave_inspector.wave_model import (
     CoordinateMesh2D,
     build_coordinate_mesh_2d,
+    build_quantized_mesh_2d,
     build_wave_frame_1d,
     build_wave_frame_2d,
 )
@@ -37,10 +39,16 @@ class WaveMathInspector:
             config.SCREEN_WIDTH,
             dtype=np.float32,
         )
-        self.mesh_2d: CoordinateMesh2D = build_coordinate_mesh_2d(
+        self.continuous_mesh: CoordinateMesh2D = build_coordinate_mesh_2d(
             config.SCREEN_WIDTH,
             config.SCREEN_HEIGHT,
         )
+        self.quantized_meshes: Dict[int, CoordinateMesh2D] = {
+            sz: build_quantized_mesh_2d(
+                config.SCREEN_WIDTH, config.SCREEN_HEIGHT, sz
+            )
+            for sz in (8, 16, 32)
+        }
 
         self.renderer_1d: Renderer1D = Renderer1D(self.screen)
         self.renderer_2d: Renderer2D = Renderer2D(self.screen)
@@ -79,14 +87,20 @@ class WaveMathInspector:
             self.renderer_1d.render(self.state, frame_1d)
         else:
             if self.state.needs_rebuild_2d:
+                mesh = (
+                    self.quantized_meshes.get(
+                        self.state.tile_size, self.continuous_mesh
+                    )
+                    if self.state.tile_stepping_enabled
+                    else self.continuous_mesh
+                )
+
                 heightfield_2d = build_wave_frame_2d(
-                    mesh=self.mesh_2d,
+                    mesh=mesh,
                     preset=self.state.preset_2d,
                     base_cycles=self.state.base_cycles,
                     relief_cycles=self.state.relief_cycles,
                     crust_cycles=self.state.crust_cycles,
-                    tile_stepping=self.state.tile_stepping_enabled,
-                    tile_size=self.state.tile_size,
                 )
                 self.renderer_2d.update_surface(
                     heightfield=heightfield_2d,

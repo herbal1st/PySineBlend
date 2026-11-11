@@ -16,7 +16,7 @@ WARP_FACTOR: float = 0.15  # fraction
 # ------ Relief Net (Isoline) Settings ------
 DEFAULT_NET_ENABLED: bool = False  # toggle
 DEFAULT_NET_INTERVALS: float = 9.0  # intervals
-DEFAULT_NET_BANDWIDTH: float = 0.002  # fraction
+DEFAULT_NET_BANDWIDTH: float = 0.005  # fraction
 COLOR_NET_BACKGROUND: tuple[int, int, int] = (10, 12, 18)  # rgb
 
 # ------ Wave Frequency Defaults ------

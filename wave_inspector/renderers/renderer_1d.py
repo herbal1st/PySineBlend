@@ -14,6 +14,17 @@ from wave_inspector.wave_model import WaveFrame1D
 class Renderer1D(BaseRenderer):
     """Draws component waves and their composite result in four panels."""
 
+    def __init__(self, screen: pygame.Surface) -> None:
+        """Initializes typography and reusable scratch surface buffers."""
+        super().__init__(screen)
+        panel_h: int = self.height // config.PANEL_COUNT
+        max_draw_h: int = (
+            panel_h - config.PANEL_TOP_MARGIN - config.PANEL_BOTTOM_MARGIN
+        )
+        self._panel_buffer: pygame.Surface = pygame.Surface(
+            (self.width, max_draw_h)
+        )
+
     def render(
         self,
         state: InspectorState,
@@ -24,7 +35,6 @@ class Renderer1D(BaseRenderer):
         formula = state.formula_1d
         pal_name, active_lut, pal_desc = state.active_palette
 
-        # Parity Alignment: Net Off = Color Fill; Net On = Colored Vector Line
         if state.net_enabled:
             fill_lut = None
             line_lut = active_lut
@@ -34,7 +44,6 @@ class Renderer1D(BaseRenderer):
             line_lut = None
             net_status = "COLOR FILL"
 
-        # Panel 1: Base Detail
         b_tag = " [ACTIVE]" if state.selected_panel_index == 0 else ""
         b_step = (
             f" [STEP: {state.tile_size}px]"
@@ -54,7 +63,6 @@ class Renderer1D(BaseRenderer):
             is_selected=state.selected_panel_index == 0,
         )
 
-        # Panel 2: Relief Multiplier
         r_tag = " [ACTIVE]" if state.selected_panel_index == 1 else ""
         r_title = (
             f"PANEL 2: RELIEF MULTIPLIER M(x){r_tag} | "
@@ -70,7 +78,6 @@ class Renderer1D(BaseRenderer):
             is_selected=state.selected_panel_index == 1,
         )
 
-        # Panel 3: Continental Crust
         if formula.uses_crust:
             c_tag = " [ACTIVE]" if state.selected_panel_index == 2 else ""
             c_title = (
@@ -100,7 +107,6 @@ class Renderer1D(BaseRenderer):
             is_selected=c_selected,
         )
 
-        # Panel 4: Composite Result
         min_v = float(np.min(frame.composite))
         max_v = float(np.max(frame.composite))
         layer_tag = "3-LAYER" if formula.uses_crust else "2-LAYER"
@@ -120,10 +126,8 @@ class Renderer1D(BaseRenderer):
             line_lut=line_lut,
         )
 
-        # Panel 4 Left Dock: Controls Card
         self.draw_controls_card(is_dark_theme=False)
 
-        # Panel 4 Right Dock: Palette & Net Status Card
         p4_pal_text = f"PALETTE: {pal_name} ({pal_desc}) | [{net_status}]"
         self._draw_palette_card(p4_pal_text)
 
@@ -161,6 +165,7 @@ class Renderer1D(BaseRenderer):
         y_draw_min = y_bottom - margin_bottom
         y_draw_max = y_top + config.PANEL_TOP_MARGIN
         draw_h = float(y_draw_min - y_draw_max)
+        int_draw_h = int(draw_h)
 
         pygame.draw.line(
             self.screen,
@@ -179,26 +184,21 @@ class Renderer1D(BaseRenderer):
         ]
         for level, color in grid_levels:
             lvl_y = int(round(y_draw_min - (level * draw_h)))
-            pygame.draw.line(self.screen, color, (0, lvl_y), (self.width, lvl_y), 1)
+            pygame.draw.line(
+                self.screen, color, (0, lvl_y), (self.width, lvl_y), 1
+            )
 
         pixel_x = np.arange(self.width, dtype=np.int32)
         pixel_y = np.round(y_draw_min - (wave_data * draw_h)).astype(np.int32)
 
-        # 1. Optional Solid Hypsometric Scanline Fill (Standard Mode)
-        if fill_lut is not None:
-            indices = np.clip(wave_data * 1023.0, 0, 1023).astype(np.int32)
-            rgb_cols = fill_lut[indices]
-            for x in range(self.width):
-                py = int(pixel_y[x])
-                if py < y_draw_min:
-                    col = (
-                        int(rgb_cols[x, 0]),
-                        int(rgb_cols[x, 1]),
-                        int(rgb_cols[x, 2]),
-                    )
-                    pygame.draw.line(self.screen, col, (x, py), (x, y_draw_min), 1)
+        if fill_lut is not None and int_draw_h > 0:
+            self._render_vectorized_fill(
+                wave_data=wave_data,
+                fill_lut=fill_lut,
+                y_draw_max=y_draw_max,
+                int_draw_h=int_draw_h,
+            )
 
-        # 2. Wave Curve Rendering (Multi-Colored Vector Line or Solid Trace)
         if line_lut is not None and not is_silenced:
             indices = np.clip(wave_data * 1023.0, 0, 1023).astype(np.int32)
             rgb_cols = line_lut[indices]
@@ -222,7 +222,6 @@ class Renderer1D(BaseRenderer):
                 self.screen, wave_color, False, points.tolist(), line_width
             )
 
-        # Selection Border Frame
         if is_selected:
             pygame.draw.rect(
                 self.screen,
@@ -234,7 +233,11 @@ class Renderer1D(BaseRenderer):
         title_color = (
             config.COLOR_SELECTION
             if is_selected
-            else (config.COLOR_MUTED_TITLE if is_silenced else config.COLOR_TITLE)
+            else (
+                config.COLOR_MUTED_TITLE
+                if is_silenced
+                else config.COLOR_TITLE
+            )
         )
         title_surf = self.font.render(title, True, title_color)
         box_w = title_surf.get_width() + 16
@@ -250,3 +253,33 @@ class Renderer1D(BaseRenderer):
             title_surf,
             (tx + config.PANEL_TITLE_TEXT_X, ty + config.PANEL_TITLE_TEXT_Y),
         )
+
+    def _render_vectorized_fill(
+        self,
+        wave_data: NDArray[np.float32],
+        fill_lut: NDArray[np.uint8],
+        y_draw_max: int,
+        int_draw_h: int,
+    ) -> None:
+        """Blits columnar hypsometric fills via vectorized NumPy buffer."""
+        lut_idx = np.clip(wave_data * 1023.0, 0, 1023).astype(np.int32)
+        cols_rgb = fill_lut[lut_idx]
+
+        h_pixels = np.round(wave_data * float(int_draw_h)).astype(np.int32)
+        h_clamped = np.clip(h_pixels, 0, int_draw_h)
+
+        y_indices = np.arange(int_draw_h, dtype=np.int32)[:, None]
+        active_mask = y_indices >= (int_draw_h - h_clamped[None, :])
+
+        bg_rgb = np.array(config.BACKGROUND_COLOR, dtype=np.uint8)
+        buffer = np.full(
+            (int_draw_h, self.width, 3), bg_rgb, dtype=np.uint8
+        )
+        broadcast_cols = np.broadcast_to(
+            cols_rgb[None, :, :], (int_draw_h, self.width, 3)
+        )
+        np.copyto(buffer, broadcast_cols, where=active_mask[:, :, None])
+
+        surf_transposed = np.transpose(buffer, (1, 0, 2))
+        fill_surface = pygame.surfarray.make_surface(surf_transposed)
+        self.screen.blit(fill_surface, (0, y_draw_max))

@@ -50,12 +50,8 @@ class Renderer2D(BaseRenderer):
         else:
             rgb_buffer = color_source[indices]
 
-        surface = pygame.image.frombuffer(
-            rgb_buffer.tobytes(),
-            (self.width, self.height),
-            "RGB",
-        )
-        self.rendered_surface = surface.convert()
+        transposed_buffer = np.transpose(rgb_buffer, (1, 0, 2))
+        pygame.surfarray.blit_array(self.rendered_surface, transposed_buffer)
 
     def _bake_contour_net(
         self,
@@ -78,7 +74,6 @@ class Renderer2D(BaseRenderer):
         levels = np.linspace(0.0, 1.0, count, dtype=np.float32)
 
         if tile_stepping:
-            # 1. Discrete Tile Mode: Geometric Cardinal Boundary Crossing
             h_left = np.roll(heightfield, 1, axis=1)
             h_right = np.roll(heightfield, -1, axis=1)
             h_up = np.roll(heightfield, 1, axis=0)
@@ -104,7 +99,6 @@ class Renderer2D(BaseRenderer):
 
                 buffer[mask] = lvl_color
         else:
-            # 2. Continuous Mode: Smooth Tolerance Band Testing
             contour_mask = np.zeros((self.height, self.width), dtype=bool)
             for lvl in levels:
                 diff = np.abs(heightfield - lvl)
@@ -116,7 +110,7 @@ class Renderer2D(BaseRenderer):
         return buffer
 
     def render(self, state: InspectorState, fps: float) -> None:
-        """Blits baked 2D surface, top-left metadata, and bottom-left controls."""
+        """Blits baked 2D surface, metadata, and controls."""
         self.screen.blit(self.rendered_surface, (0, 0))
         self._draw_hud(state, fps)
         self.draw_controls_card(is_dark_theme=True)

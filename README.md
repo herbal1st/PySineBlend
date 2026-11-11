@@ -1,13 +1,13 @@
 ```
- ____           ____                        ____    ___                      __
-/\  _`\        /\  _`\   __                /\  _`\ /\_ \                    /\ \
-\ \ \L\ \__  __\ \,\L\_\/\_\    ___      __\ \ \L\ \//\ \      __    ___    \_\ \
+ ____           ____                        ____    ___                      __   
+/\  _`\        /\  _`\   __                /\  _`\ /\_ \                    /\ \  
+\ \ \L\ \__  __\ \,\L\_\/\_\    ___      __\ \ \L\ \//\ \      __    ___    \_\ \ 
  \ \ ,__/\ \/\ \\/_\__ \\/\ \ /' _ `\  /'__`\ \  _ <'\ \ \   /'__`\/' _ `\  /'_` \
   \ \ \/\ \ \_\ \ /\ \L\ \ \ \/\ \/\ \/\  __/\ \ \L\ \\_\ \_/\  __//\ \/\ \/\ \L\ \
    \ \_\ \/`____ \\ `\____\ \_\ \_\ \_\ \____\\ \____//\____\ \____\ \_\ \_\ \___,_\
     \/_/  `/___/> \\/_____/\/_/\/_/\/_/\/____/ \/___/ \/____/\/____/\/_/\/_/\/__,_ /
-             /\___/
-             \/__/
+             /\___/                                                               
+             \/__/                                                                
 ===============================================================================
                  PYSINEBLEND - SYSTEM SPECIFICATIONS & GUIDE
 ===============================================================================
@@ -19,7 +19,8 @@
     - Pygame CE 2.5 or newer
 
 Pygame CE is installed as pygame-ce and imported in the application as
-pygame. The requirements.txt file lists the packages needed by the project.
+pygame. The requirements.txt file lists all runtime dependencies.
+
 
 [2.0 INSTALLATION AND STARTUP]
 -------------------------------------------------------------------------------
@@ -42,233 +43,257 @@ python -m pip install -r requirements.txt
 python main.py
 
 
-The application opens a window with four stacked wave panels. Use Escape or
-the window's close button to exit.
+The application boots immediately into the 1D Oscilloscope viewport. Use
+Escape or the window's close button to exit.
 
-Run main.py from the project root so the application can import config.py and
-the wave_inspector package.
 
 [3.0 PROJECT OVERVIEW]
 -------------------------------------------------------------------------------
-PySineBlend is a standalone application for exploring how mathematical
-wave layers combine into a height-like signal.
+PySineBlend is an interactive mathematical laboratory for synthesizing,
+blending, and inspecting procedural heightfield waves in real time.
 
-It displays four horizontal plots:
+Unlike simple signal plotters, PySineBlend provides seamless dual-viewport
+parity across two dimensions:
 
-    1. Base detail wave
-    2. Relief multiplier wave
-    3. Continental crust wave
-    4. Composite result from the selected formula
+    Mode 1: 1D Oscilloscope (Cross-Sectional Signal Interference)
+    Mode 2: 2D Spatial Synthesizer (Planar Topographical Elevation Field)
 
-The first three panels show the input signals. The fourth shows the result of
-combining them. This makes it easier to inspect a formula's shape and range
-before using similar concepts in a larger procedural generation system.
+The tool allows designers and developers to see how mathematical equations,
+layer budgeting, frequency scaling, discrete tile stepping, and color ramps
+translate from single-line curves into full continuous 2D landscapes.
 
-Wave calculations use NumPy; the plots and interactive window use Pygame.
-This is a one-dimensional wave visualization tool. It is not a complete game,
-a two-dimensional terrain generator, or a procedural-noise inspector.
+Wave mathematics execute in vectorized C-speed NumPy arrays, while hardware-
+accelerated rendering is handled via Pygame-ce.
+
 
 [4.0 WHAT THE INSPECTOR SHOWS]
 -------------------------------------------------------------------------------
-Each component is a smooth, repeating sine wave stretched across the display.
-The number of cycles controls how many complete repeats fit from the left edge
-to the right edge. More cycles create more frequent peaks and valleys; fewer
-cycles create broader shapes.
+The application models terrain through three fundamental geological roles:
 
-The component waves are normalized to the range 0.0 to 1.0:
+    1. Base Detail Wave  : Dense local hills, valleys, and ridges.
+                           Labelled D(x) in 1D; B in formulas.
+    2. Relief Multiplier : The macro envelope deciding where mountains swell
+                           versus where valleys and plains flatten out.
+                           Labelled M(x) in 1D; R in formulas.
+    3. Continental Crust : The tectonic ground floor that lifts land into dry
+                           continents or drops it into ocean trenches.
+                           Labelled C(x) in 1D; C in formulas.
 
-    - The base-detail component is labelled D(x) in its panel.
-    - The relief component is labelled R(x).
-    - The crust component is labelled C(x).
+All wave signals are normalized between 0.000 (abyssal sea floor) and 1.000
+(mountain peak ceiling). Starting heights determine the wave phase offset at
+the left edge or radial center.
 
-The formula catalog uses B for base detail, R for relief, and C for crust.
-Thus, B in a formula refers to the signal labelled D(x) in the display.
 
-Each component has its own cycle count and starting height. The starting
-height sets the wave value at the left edge. The application calculates a
-phase offset so the wave begins at that height.
-
-The formula result is clipped to the range 0.0 to 1.0 before it is drawn.
-Clipping keeps the displayed composite signal within the normalized range,
-even when a formula's raw output goes above or below it.
-
-[5.0 FORMULA CATALOG]
+[5.0 DUAL-VIEWPORT ARCHITECTURE]
 -------------------------------------------------------------------------------
-The inspector includes 12 formula presets. Each has a name, a shorthand
-expression, and a setting indicating whether it uses the crust component.
+Switch seamlessly between both viewports at any time using keys '1' and '2':
 
-Three-layer formulas:
-
-    - Master 3-Layer Budgeting
-    - Global Envelope Factor
-    - Volcanic Island Override
-    - Inverse Crust Bypass
-    - Dynamic Lerp / Morph
-    - Tectonic Subduction Belt
-    - Stepped Mesa Terraces
-
-Two-layer formulas:
-
-    - Factored Virtual Crust
-    - Tibetan High Plateau
-    - Razor Ridge / Granite Peaks
-    - Inverted Canyonlands
-    - Soft Natural Saturation
-
-A "layer" is one of the input waves used by a formula. Three-layer formulas
-use base, relief, and crust. Two-layer formulas use base and relief only.
-
-The formulas are stored separately from the display code. This keeps the
-mathematics easier to read and makes it possible to use or test the formulas
-without opening a Pygame window.
-
-[6.0 HOW THE WAVE MATH WORKS]
+MODE 1: 1D OSCILLOSCOPE (Key [1])
 -------------------------------------------------------------------------------
-Each component is calculated across a normalized horizontal coordinate x.
-A simplified form of the calculation is:
+Presents four vertically stacked real-time oscilloscope panels:
+    - Panel 1: Base Detail wave D(x).
+    - Panel 2: Relief Multiplier envelope M(x).
+    - Panel 3: Continental Crust tectonic floor C(x).
+    - Panel 4: Composite Result from the active mathematical formula.
 
-    wave(x) = 0.5 + 0.5 * sin(2 * pi * cycles * x + phase)
+Panel 4 features optional Hypsometric Fill: pressing [N] paints vertical
+color ribbons under the curve down to the baseline using the active color
+palette, giving immediate visual intuition of elevation bands.
 
-The phase is calculated from the configured starting height. The cycle count
-then controls how often the wave repeats across the display.
 
-For each frame, the application:
-
-    1. Builds the base, relief, and crust arrays.
-    2. Passes those arrays to the active formula.
-    3. Clips the formula output to the range 0.0 to 1.0.
-    4. Converts values to pixel positions and draws the four panels.
-
-The calculations operate on whole NumPy arrays rather than using a Python
-loop for every horizontal pixel. Pygame draws the resulting plot lines.
-
-[7.0 CONTROLS]
+MODE 2: 2D SPATIAL SYNTHESIZER (Key [2])
 -------------------------------------------------------------------------------
-    TAB                 : Select the next formula.
-    SHIFT + TAB         : Select the previous formula.
-    UP / DOWN           : Focus the next or previous input layer.
-    HOLD LEFT           : Reduce the focused layer's cycle count.
-    HOLD RIGHT          : Increase the focused layer's cycle count.
-    ESCAPE              : Close the inspector.
-    WINDOW CLOSE        : Close the inspector.
+Projects the three wave roles across a continuous 2D surface on a 16:9 screen:
+    - Base Detail (B)     : Mapped to Vertical Stripes along X (dense ridges).
+    - Relief Multiplier (R): Mapped to Horizontal Bands along Y (valleys).
+    - Continental Crust (C): Mapped to Concentric Radial Rings (central dome).
 
-Left and right adjust the currently focused input component. The composite
-panel is not an adjustable input.
+Their intersection naturally forms an orthogonal mountain grid lifted by a
+central continental dome and falling into ocean waters at the borders.
 
-Frequency changes are time-scaled. While a key is held, the cycle count is
-multiplied or divided by a factor based on the elapsed time for that frame.
-This avoids fixed per-key increments and makes the adjustment rate broadly
-consistent across different frame rates.
+Dual Projections for 2-Layer Formulas:
+Because 2-layer formulas only have two inputs (Base and Relief), simple
+orthogonal grids can look like an artificial checkerboard. PySineBlend gives
+every 2-layer formula two selectable 2D projection modes:
+    - [Radial] : The Relief envelope forms a circular continental dome,
+                 dissolving ridges into flat ocean plains at the edges.
+    - [Warped] : The Relief layer organically shears and bends the Base
+                 coordinates, turning rigid vertical stripes into serpentine,
+                 folded mountain belts and river valleys.
 
-When a formula does not use crust, the crust panel remains visible but is
-muted. Focus skips that panel until a three-layer formula is selected.
 
-[8.0 CONFIGURATION]
+[6.0 FORMULA CATALOG & PRESETS]
 -------------------------------------------------------------------------------
-Runtime and tuning settings are collected in the root config.py file.
+The inspector maintains complete bi-directional state synchronization between
+both viewports:
 
-Window settings:
-
-    APP_TITLE        : Window caption.
-    SCREEN_WIDTH     : Window width in pixels.
-    SCREEN_HEIGHT    : Window height in pixels.
-    FPS              : Target frame rate.
-    BACKGROUND_COLOR : Window background RGB color.
-
-Initial wave settings:
-
-    DEFAULT_BASE_CYCLES   : Starting base-detail cycles across the width.
-    DEFAULT_RELIEF_CYCLES : Starting relief cycles across the width.
-    DEFAULT_CRUST_CYCLES  : Starting crust cycles across the width.
-
-    BASE_START   : Base-detail value at the left edge.
-    RELIEF_START : Relief value at the left edge.
-    CRUST_START  : Crust value at the left edge.
-
-Formula parameters:
-
-    CRUST_BUDGET      : Crust contribution in formulas that use a crust
-                        budget.
-    RELIEF_BUDGET     : Relief contribution in formulas that use a relief
-                        budget.
-    MIN_RELIEF_FACTOR : Minimum relief contribution in the master formula.
-
-Frequency controls:
-
-    CYCLE_ZOOM_RATE : Rate used by the held-key multiplier.
-    BASE_MIN_CYCLES : Lowest allowed base-detail cycle count.
-    BASE_MAX_CYCLES : Highest allowed base-detail cycle count.
-    RELIEF_MIN_CYCLES: Lowest allowed relief cycle count.
-    RELIEF_MAX_CYCLES: Highest allowed relief cycle count.
-    CRUST_MIN_CYCLES: Lowest allowed crust cycle count.
-    CRUST_MAX_CYCLES: Highest allowed crust cycle count.
-
-The current configured cycle zoom rate is 0.75 per second. At a target of
-60 FPS, this produces about a 1.25% increase per frame while Right is held.
-The rate and each component's lower and upper bounds can be changed
-independently in config.py.
-
-Drawing colors and panel layout values are also configurable there. Adjust
-those values to change the appearance without changing the wave calculations.
-
-[9.0 PROJECT STRUCTURE]
+MODE 1 CATALOG (12 Composite Formulas):
 -------------------------------------------------------------------------------
-└── project-root/
-    ├── main.py
-    ├── config.py
-    ├── requirements.txt
-    ├── README.md
-    ├── LICENSE
+Mode 1 excludes solo components so Panel 4 never renders a redundant duplicate
+of an upper panel. It cycles strictly through the 12 composite recipes:
+
+Three-Layer Formulas:
+    - Master 3-Layer Budgeting   : Standard additive tectonic crust + relief.
+    - Global Envelope Factor     : Overall relief scaling of crust and base.
+    - Volcanic Island Override   : Heavy crust dome with dual-stage detail.
+    - Inverse Crust Bypass       : Shoreline bypass preserving low relief.
+    - Dynamic Lerp / Morph       : Smooth morph between crust and base.
+    - Tectonic Subduction Belt   : Squared crust basin with ridge clamping.
+    - Stepped Mesa Terraces      : 4-tier terrace quantization with crust.
+
+Two-Layer Formulas (Continental Crust Silenced):
+    - Factored Virtual Crust     : Macro envelope drives both floor and peaks.
+    - Tibetan High Plateau       : High plateau floor with sine-wave valleys.
+    - Razor Ridge / Granite Peaks: Squared base ridges sharpened by relief.
+    - Inverted Canyonlands       : Inverted relief carving steep ravines.
+    - Soft Natural Saturation    : Hyperbolic tangent organic compression.
+
+
+MODE 2 CATALOG (20 Total Presets):
+-------------------------------------------------------------------------------
+Mode 2 allows inspecting isolated wave geometry alongside composite math:
+    - Presets 1 to 3   : Solo Components (Vertical Base, Horizontal Relief,
+                         and Radial Continental Crust).
+    - Presets 4 to 8   : 3-Layer Composite Series.
+    - Presets 9 to 18  : 2-Layer Series Dual Projections (each 2-layer formula
+                         features both [Radial] and [Warped] variants).
+    - Presets 19 to 20 : Advanced 3-Layer Hybrids.
+
+
+[7.0 DISCRETE TILE STEPPING (QUANTIZATION)]
+-------------------------------------------------------------------------------
+Pressing [SPACE] and [SHIFT + SPACE] cycles the terrain through a power-of-two
+tile quantization ring:
+    OFF -> 8px -> 16px -> 32px -> OFF
+
+Centroid Grid Anchoring:
+Tile sampling evaluates elevation at the exact centroid (+0.5 stride) of
+each tile block rather than its top-left edge. This ensures radial islands,
+concentric rings, and diagonal ridges remain mathematically centered and
+symmetrical across all four quadrants without shifting the visual screen grid.
+
+Visual Representation Across Viewports:
+    - In 1D: Smooth sine curves break into crisp, horizontal step-pyramid
+             staircases, illustrating discrete elevation hold plateaus.
+    - In 2D: Smooth raster gradients turn into retro pixel blocks or macro-
+             biome chunks (similar to a classic 16-bit RPG overworld).
+
+Stepping past 64px (or below 4px with Shift) deactivates tile mode cleanly.
+
+
+[8.0 DIAGNOSTIC COLOR SUITE, INVERSION & RELIEF NET]
+-------------------------------------------------------------------------------
+PySineBlend includes pre-baked 1,024-entry Look-Up Tables (LUTs) for mapping
+elevation directly to color in under 0.1 milliseconds:
+
+    - GREYSCALE : Linear monochrome baseline.
+    - MAGMA     : Perceptually uniform high-contrast sequential (black to
+                  dark purple, fiery red, yellow, and white).
+    - TURBO     : Spectral rainbow curve exposing subtle harmonic creases.
+    - VIRIDIS   : Perceptually uniform blue-to-yellow standard colormap.
+
+Color Inversion (Key [I]):
+Pressing [I] reverses the active color ramp along its elevation axis. In
+Greyscale, this creates a film-negative/X-ray effect; in thermal heatmaps,
+it inverts peak-versus-valley polarity.
+
+Topographical Relief Net / Isoline Mode (Key [N]):
+Pressing [N] turns the visualization into a topographical isoline net:
+    - In 1D: Toggles vertical hypsometric scanline fill under Panel 4.
+    - In 2D: Replaces the continuous raster surface with a dark blueprint
+             vector contour net (levels: 0.00, 0.25, 0.50, 0.75, 1.00).
+
+Dual Evaluation Mechanics:
+    - Continuous Mode : Evaluates contour lines using a narrow tolerance
+                        bandwidth (+/- 0.015), creating smooth 1-pixel curves.
+    - Discrete Tile Mode: Automatically shifts to geometric cardinal cell-
+                        crossing (h_min <= L <= h_max). Testing whether a
+                        level passes through a tile's spatial span guarantees
+                        unbroken, strictly 1-tile-thick perimeter outlines
+                        with zero gaps on steep slopes and zero blobs on
+                        flat plateaus.
+
+
+[9.0 CONTROLS & KEYBOARD SHORTCUTS]
+-------------------------------------------------------------------------------
+    1                   : Switch to Mode 1 (1D Oscilloscope Viewport).
+    2                   : Switch to Mode 2 (2D Spatial Synthesizer Viewport).
+
+    TAB                 : Cycle to next formula preset.
+    SHIFT + TAB         : Cycle to previous formula preset.
+
+    UP / DOWN           : Switch channel focus (Base -> Relief -> Crust).
+                          (Automatically skips Crust on 2-layer formulas).
+
+    HOLD RIGHT          : Continuously zoom in (increase frequency/cycles).
+    HOLD LEFT           : Continuously zoom out (decrease frequency/cycles).
+
+    SPACE               : Step tile size coarser (OFF -> 4 -> 8 -> ... -> 64).
+    SHIFT + SPACE       : Step tile size finer (64 -> ... -> 4 -> OFF).
+
+    C                   : Cycle active color palette forward.
+    SHIFT + C           : Cycle active color palette backward.
+
+    I                   : Toggle palette color inversion on/off.
+    N                   : Toggle Topographical Relief Net / 1D Fill mode.
+
+    R                   : Reset active focused channel cycles to default.
+    SHIFT + R           : Reset all channels to default configuration.
+
+    ESCAPE / CLOSE      : Clean application shutdown.
+
+
+[10.0 CONFIGURATION]
+-------------------------------------------------------------------------------
+Global defaults and hardware parameters reside in config.py:
+
+    SCREEN_WIDTH / HEIGHT     : Desktop window resolution in pixels.
+    FPS                       : Display refresh rate target (60 Hz).
+    DEFAULT_VIEW_MODE         : Boot viewport mode (1 or 2).
+
+    DEFAULT_TILE_SIZE         : Starting tile step size in pixels (8px).
+    MIN / MAX_TILE_SIZE       : Power-of-two quantization clamps (4px to 64px).
+    WARP_FACTOR               : Domain warping shear intensity in 2D (0.15).
+
+    DEFAULT_NET_ENABLED       : Starting state of the relief isoline net.
+    DEFAULT_NET_INTERVALS     : Number of elevation intervals (4.0 -> 5 steps).
+    DEFAULT_NET_BANDWIDTH     : Thickness of contour tolerance lines (0.015).
+    COLOR_NET_BACKGROUND      : Background color for 2D net mode (10, 12, 18).
+
+    DEFAULT_BASE_CYCLES       : Initial Base Detail cycle count across screen.
+    DEFAULT_RELIEF_CYCLES     : Initial Relief Multiplier cycle count.
+    DEFAULT_CRUST_CYCLES      : Initial Continental Crust cycle count.
+
+    CYCLE_ZOOM_RATE           : Continuous exponential zoom multiplier rate.
+    CRUST / RELIEF_BUDGET     : Mathematical elevation budget shares (0.35/0.65).
+
+
+[11.0 PROJECT STRUCTURE]
+-------------------------------------------------------------------------------
+└── pysineblend/
+    ├── main.py                # Root bootstrap entry point
+    ├── config.py              # Central runtime settings and layout constants
+    ├── requirements.txt       # Minimal dependencies (numpy, pygame-ce)
+    ├── README.md              # System specification and documentation
     └── wave_inspector/
-        ├── __init__.py
-        ├── app.py
-        ├── formulas.py
-        ├── renderer.py
-        ├── state.py
-        └── wave_model.py
+        ├── __init__.py        # Namespace package marker
+        ├── app.py             # Main application lifecycle and loop coordinator
+        ├── formulas.py        # 15-preset catalog, math functions, 2D specs
+        ├── heatmaps.py        # 1,024-slot LUT bakes and array inversion
+        ├── input_handler.py   # Isolated event routing and held-key polling
+        ├── state.py           # Shared mutable state machine and sync logic
+        ├── wave_model.py      # Pure NumPy 1D and 2D wave synthesis engine
+        └── renderers/
+            ├── __init__.py    # Namespace package marker
+            ├── base_renderer.py # Dynamic typography and HUD card drawer
+            ├── renderer_1d.py # 4-panel oscilloscope rendering and fill
+            └── renderer_2d.py # 2D surface baking and isoline net generator
 
-Module responsibilities:
 
-    main.py
-        Application entry point.
-
-    config.py
-        Window settings, initial wave values, formula parameters, cycle
-        adjustment rate, cycle limits, and drawing settings.
-
-    wave_inspector/app.py
-        Pygame window lifecycle, keyboard input, frame timing, and
-        coordination between the model and renderer.
-
-    wave_inspector/formulas.py
-        Formula preset model and the 12 formula implementations.
-
-    wave_inspector/wave_model.py
-        Phase calculation, component wave generation, and composite math.
-        This module does not depend on Pygame.
-
-    wave_inspector/state.py
-        Selected formula, focused component, and current cycle counts.
-
-    wave_inspector/renderer.py
-        Four-panel plots, grids, titles, selection border, and composite
-        range display.
-
-[10.0 PROJECT SCOPE]
--------------------------------------------------------------------------------
-The application includes:
-
-    - One-dimensional sine-wave components.
-    - A catalog of 12 two-layer and three-layer formulas.
-    - Interactive formula and component selection.
-    - Time-scaled cycle adjustment with separate configurable bounds.
-    - A four-panel Pygame visualization.
-    - NumPy-based wave calculations separated from Pygame rendering.
-
-[11.0 LICENSE]
+[12.0 LICENSE]
 -------------------------------------------------------------------------------
 This project is licensed under the MIT License. See the root LICENSE file
-for the complete terms.
+for complete terms.
 
 ===============================================================================
                  END OF PYSINEBLEND SPECIFICATIONS & GUIDE

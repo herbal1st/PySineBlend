@@ -72,27 +72,34 @@ def build_coordinate_mesh_2d(
     )
 
 
-def build_quantized_mesh_2d(
+def build_coarse_mesh_2d(
     width: int,
     height: int,
     tile_size: int,
 ) -> CoordinateMesh2D:
-    """Precomputes centroid-quantized coordinate and radial distance grids."""
-    base_mesh = build_coordinate_mesh_2d(width, height)
-    x_q = quantize_coordinates(base_mesh.x_norm, width, tile_size)
-    y_q = quantize_coordinates(base_mesh.y_norm, height, tile_size)
+    """Precomputes coarse tile-centroid coordinate and radial distance grids."""
+    coarse_w = max(1, math.ceil(float(width) / float(tile_size)))
+    coarse_h = max(1, math.ceil(float(height) / float(tile_size)))
 
-    aspect: float = float(width) / float(height)
-    xc = (x_q - 0.5) * aspect
-    yc = y_q - 0.5
-    raw_r = np.sqrt((xc * xc) + (yc * yc))
-    max_r = math.sqrt((0.5 * aspect) ** 2 + 0.5**2)
-    r_q = (raw_r / float(max_r)).astype(np.float32)
+    stride_x = float(tile_size) / float(width)
+    stride_y = float(tile_size) / float(height)
+
+    x_lin = (np.arange(coarse_w, dtype=np.float32) + 0.5) * stride_x
+    y_lin = (np.arange(coarse_h, dtype=np.float32) + 0.5) * stride_y
+    x_norm, y_norm = np.meshgrid(x_lin, y_lin)
+
+    aspect_ratio: float = float(width) / float(height)
+    x_centered = (x_norm - 0.5) * aspect_ratio
+    y_centered = y_norm - 0.5
+
+    raw_r = np.sqrt((x_centered * x_centered) + (y_centered * y_centered))
+    max_corner_r = math.sqrt((0.5 * aspect_ratio) ** 2 + 0.5**2)
+    r_norm = (raw_r / float(max_corner_r)).astype(np.float32)
 
     return CoordinateMesh2D(
-        x_norm=x_q,
-        y_norm=y_q,
-        r_norm=r_q,
+        x_norm=x_norm,
+        y_norm=y_norm,
+        r_norm=r_norm,
     )
 
 
@@ -148,8 +155,11 @@ def build_wave_frame_2d(
     relief_cycles: float,
     crust_cycles: float,
     is_warped: bool = False,
+    target_width: int = config.SCREEN_WIDTH,
+    target_height: int = config.SCREEN_HEIGHT,
+    tile_size: int = 0,
 ) -> NDArray[np.float32]:
-    """Evaluates 2D wave field with dynamic perspective geometry."""
+    """Evaluates 2D wave field with dynamic perspective and coarse tiles."""
     x_grid = mesh.x_norm
     y_grid = mesh.y_norm
     r_grid = mesh.r_norm
@@ -200,4 +210,13 @@ def build_wave_frame_2d(
             )
 
     raw_composite = preset.func(base_2d, relief_2d, crust_2d)
-    return np.clip(raw_composite, 0.0, 1.0).astype(np.float32)
+    clipped = np.clip(raw_composite, 0.0, 1.0).astype(np.float32)
+
+    if tile_size > 1:
+        expanded_y = np.repeat(clipped, tile_size, axis=0)
+        expanded_xy = np.repeat(expanded_y, tile_size, axis=1)
+        return np.ascontiguousarray(
+            expanded_xy[:target_height, :target_width], dtype=np.float32
+        )
+
+    return np.ascontiguousarray(clipped)

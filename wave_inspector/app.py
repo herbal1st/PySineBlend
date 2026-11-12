@@ -11,8 +11,8 @@ from wave_inspector.renderers.renderer_2d import Renderer2D
 from wave_inspector.state import InspectorState
 from wave_inspector.wave_model import (
     CoordinateMesh2D,
+    build_coarse_mesh_2d,
     build_coordinate_mesh_2d,
-    build_quantized_mesh_2d,
     build_wave_frame_1d,
     build_wave_frame_2d,
 )
@@ -43,8 +43,8 @@ class WaveMathInspector:
             config.SCREEN_WIDTH,
             config.SCREEN_HEIGHT,
         )
-        self.quantized_meshes: Dict[int, CoordinateMesh2D] = {
-            sz: build_quantized_mesh_2d(
+        self.coarse_meshes: Dict[int, CoordinateMesh2D] = {
+            sz: build_coarse_mesh_2d(
                 config.SCREEN_WIDTH, config.SCREEN_HEIGHT, sz
             )
             for sz in (8, 16, 32)
@@ -54,7 +54,7 @@ class WaveMathInspector:
         self.renderer_2d: Renderer2D = Renderer2D(self.screen)
 
     def run(self) -> None:
-        """Executes main event polling, wave math, and frame drawing."""
+        """Executes main event polling, mathematical evaluation, and drawing."""
         running = True
         try:
             while running:
@@ -71,7 +71,7 @@ class WaveMathInspector:
             pygame.quit()
 
     def _render_active_mode(self) -> None:
-        """Delegates frame generation and rendering to active viewport."""
+        """Delegates frame generation and rendering to the active viewport."""
         _, active_lut, _ = self.state.active_palette
 
         if self.state.active_mode == 1:
@@ -87,10 +87,13 @@ class WaveMathInspector:
             self.renderer_1d.render(self.state, frame_1d)
         else:
             if self.state.needs_rebuild_2d:
+                tile_sz = (
+                    self.state.tile_size
+                    if self.state.tile_stepping_enabled
+                    else 0
+                )
                 mesh = (
-                    self.quantized_meshes.get(
-                        self.state.tile_size, self.continuous_mesh
-                    )
+                    self.coarse_meshes.get(tile_sz, self.continuous_mesh)
                     if self.state.tile_stepping_enabled
                     else self.continuous_mesh
                 )
@@ -102,6 +105,9 @@ class WaveMathInspector:
                     relief_cycles=self.state.relief_cycles,
                     crust_cycles=self.state.crust_cycles,
                     is_warped=self.state.is_warped,
+                    target_width=config.SCREEN_WIDTH,
+                    target_height=config.SCREEN_HEIGHT,
+                    tile_size=tile_sz,
                 )
                 self.renderer_2d.update_surface(
                     heightfield=heightfield_2d,

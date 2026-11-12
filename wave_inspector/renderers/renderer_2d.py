@@ -48,7 +48,7 @@ class Renderer2D(BaseRenderer):
                 tile_stepping=state.tile_stepping_enabled,
             )
         else:
-            rgb_buffer = color_source[indices]
+            rgb_buffer = np.ascontiguousarray(color_source[indices])
 
         transposed_buffer = np.transpose(rgb_buffer, (1, 0, 2))
         pygame.surfarray.blit_array(self.rendered_surface, transposed_buffer)
@@ -107,7 +107,7 @@ class Renderer2D(BaseRenderer):
             colored_pixels = lut[indices]
             buffer[contour_mask] = colored_pixels[contour_mask]
 
-        return buffer
+        return np.ascontiguousarray(buffer)
 
     def render(self, state: InspectorState, fps: float) -> None:
         """Blits baked 2D surface, metadata, and controls."""

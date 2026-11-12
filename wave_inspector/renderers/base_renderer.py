@@ -56,21 +56,24 @@ class BaseRenderer:
 
     def draw_controls_card(self, is_dark_theme: bool = False) -> None:
         """Renders standardized keyboard cheat sheet docked to bottom-left."""
-        text = (
-            "[1/2]: View | [TAB]: Formula | [UP/DN]: Focus | "
-            "[LF/RT]: Zoom | [SPACE]: Step | [C]: Palette | "
-            "[I]: Invert | [N]: Net | [R]: Reset"
-        )
-        text_color = (
-            config.COLOR_HUD_TEXT_NORMAL
-            if is_dark_theme
-            else config.COLOR_TITLE
-        )
-        bg_color = (
-            config.COLOR_HUD_CARD_2D
-            if is_dark_theme
-            else config.COLOR_TITLE_CARD
-        )
+        if is_dark_theme:
+            text = (
+                "[1/2]: View | [TAB]: Formula | [UP/DN]: Focus | "
+                "[LF/RT]: Zoom | [SPACE]: Step | [C]: Palette | "
+                "[I]: Invert | [P]: Persp | [N]: Net | [R]: Reset"
+            )
+            text_color = config.COLOR_HUD_TEXT_NORMAL
+            bg_color = config.COLOR_HUD_CARD_2D
+            rx = 10
+        else:
+            text = (
+                "[1/2]: View | [TAB]: Formula | [UP/DN]: Focus | "
+                "[LF/RT]: Zoom | [SPACE]: Step | [C]: Palette | "
+                "[I]: Invert | [N]: Net | [R]: Reset"
+            )
+            text_color = config.COLOR_TITLE
+            bg_color = config.COLOR_TITLE_CARD
+            rx = config.PANEL_TITLE_X
 
         surf = self.font.render(text, True, text_color)
         box_w = surf.get_width() + 16
@@ -79,7 +82,6 @@ class BaseRenderer:
         bg_card = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
         bg_card.fill(bg_color)
 
-        rx = 10 if is_dark_theme else config.PANEL_TITLE_X
         ry = self.height - box_h - 10
 
         self.screen.blit(bg_card, (rx, ry))

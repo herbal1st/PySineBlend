@@ -124,10 +124,13 @@ class Renderer2D(BaseRenderer):
 
         if preset.composite_index < 0:
             type_tag = "SOLO"
+            persp_tag = "N/A (SOLO)"
         elif preset.uses_crust:
             type_tag = "3-LAYER"
+            persp_tag = "WARPED" if state.is_warped else "RADIAL"
         else:
-            type_tag = f"2-LAYER:{preset.projection}"
+            type_tag = "2-LAYER"
+            persp_tag = "WARPED" if state.is_warped else "RADIAL"
 
         step_tag = (
             f"ACTIVE ({state.tile_size}px)"
@@ -143,7 +146,7 @@ class Renderer2D(BaseRenderer):
                 config.COLOR_HUD_TEXT_ACTIVE,
             ),
             (
-                f"PALETTE: {pal_name} ({pal_desc})",
+                f"PALETTE: {pal_name} ({pal_desc}) | PERSP: {persp_tag}",
                 config.COLOR_HUD_TEXT_NORMAL,
             ),
             (

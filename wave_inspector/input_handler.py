@@ -54,6 +54,9 @@ class InputHandler:
             state.cycle_palette(direction)
         elif event.key == pygame.K_i:
             state.toggle_inversion()
+        elif event.key == pygame.K_p:
+            if state.active_mode == 2:
+                state.toggle_perspective()
         elif event.key == pygame.K_n:
             state.toggle_net_mode()
         elif event.key == pygame.K_UP:

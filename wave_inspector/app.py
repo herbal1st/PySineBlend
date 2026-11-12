@@ -54,7 +54,7 @@ class WaveMathInspector:
         self.renderer_2d: Renderer2D = Renderer2D(self.screen)
 
     def run(self) -> None:
-        """Executes main event polling, mathematical evaluation, and drawing."""
+        """Executes main event polling, wave math, and frame drawing."""
         running = True
         try:
             while running:
@@ -71,7 +71,7 @@ class WaveMathInspector:
             pygame.quit()
 
     def _render_active_mode(self) -> None:
-        """Delegates frame generation and rendering to the active viewport."""
+        """Delegates frame generation and rendering to active viewport."""
         _, active_lut, _ = self.state.active_palette
 
         if self.state.active_mode == 1:
@@ -101,6 +101,7 @@ class WaveMathInspector:
                     base_cycles=self.state.base_cycles,
                     relief_cycles=self.state.relief_cycles,
                     crust_cycles=self.state.crust_cycles,
+                    is_warped=self.state.is_warped,
                 )
                 self.renderer_2d.update_surface(
                     heightfield=heightfield_2d,

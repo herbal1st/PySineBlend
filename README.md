@@ -116,29 +116,25 @@ Panel 4 features dual-mode visualization:
 
 MODE 2: 2D SPATIAL SYNTHESIZER (Key [2])
 -------------------------------------------------------------------------------
-Projects the three wave roles across a continuous 2D surface on a 16:9 canvas:
+Projects wave roles across a continuous 2D surface on a 16:9 canvas:
     - Base Detail (B)     : Mapped to Vertical Stripes along X (dense ridges).
     - Relief Multiplier (R): Mapped to Horizontal Bands along Y (valleys).
     - Continental Crust (C): Mapped to Concentric Radial Rings (central dome).
 
-Their natural intersection creates an orthogonal mountain grid lifted by a
-central continental dome and falling off into ocean waters at the borders.
-
-Dual Projections for Two-Layer Formulas:
-Because formulas without tectonic crust only take two inputs (Base and Relief),
-simple orthogonal grids can look like an artificial checkerboard. PySineBlend
-provides two specialized 2D projection models for two-layer recipes:
-    - [Radial] : The Relief envelope forms a circular continental dome,
-                 dissolving ridges into flat ocean plains at the edges.
-    - [Warped] : The Relief layer organically shears and bends the Base
-                 coordinates, turning rigid vertical stripes into serpentine,
-                 folded mountain belts and river valleys.
+Perspective / Projection Geometry (Key [P]):
+Pressing [P] toggles between two spatial projection models at runtime:
+    - RADIAL : 2-layer formulas map Relief radially to form a circular island.
+               3-layer formulas map orthogonal Base and Relief over a radial
+               continental crust dome.
+    - WARPED : The Relief layer organically shears and bends the Base
+               detail coordinates (X_warp = X + offset), turning rigid grids
+               into serpentine, folded mountain belts and geological fault
+               lines across both 2-layer and 3-layer topographies.
 
 
 [6.0 FORMULA CATALOG & PRESETS]
 -------------------------------------------------------------------------------
-The inspector maintains full bi-directional state synchronization between
-viewports:
+The inspector maintains bi-directional state synchronization between viewports:
 
 MODE 1 CATALOG (12 Composite Formulas):
 -------------------------------------------------------------------------------
@@ -162,15 +158,14 @@ Two-Layer Formulas (Continental Crust Silenced):
     - Soft Natural Saturation    : Hyperbolic tangent organic compression.
 
 
-MODE 2 CATALOG (20 Total Presets):
+MODE 2 CATALOG (15 Total Presets):
 -------------------------------------------------------------------------------
 Mode 2 allows inspecting isolated wave geometry alongside composite formulas:
     - Presets 1 to 3   : Solo Components (Vertical Base, Horizontal Relief,
                          and Radial Continental Crust).
     - Presets 4 to 8   : 3-Layer Composite Series.
-    - Presets 9 to 18  : 2-Layer Series Dual Projections (each 2-layer formula
-                         features both [Radial] and [Warped] variants).
-    - Presets 19 to 20 : Advanced 3-Layer Hybrids.
+    - Presets 9 to 13  : 2-Layer Series (Toggled via [P] between Radial/Warped).
+    - Presets 14 to 15 : Advanced 3-Layer Hybrids.
 
 
 [7.0 DISCRETE TILE STEPPING (QUANTIZATION)]
@@ -252,6 +247,7 @@ Dual Evaluation Mechanics:
     SHIFT + C           : Cycle active color palette backward.
 
     I                   : Toggle palette color inversion on/off.
+    P                   : Toggle spatial perspective (Mode 2 only: Radial/Warped).
     N                   : Toggle Topographical Relief Net / 1D Fill mode.
 
     R                   : Reset active focused channel cycles to default.

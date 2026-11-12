@@ -147,38 +147,57 @@ def build_wave_frame_2d(
     base_cycles: float,
     relief_cycles: float,
     crust_cycles: float,
+    is_warped: bool = False,
 ) -> NDArray[np.float32]:
-    """Evaluates 2D wave interference according to active projection mode."""
+    """Evaluates 2D wave field with dynamic perspective geometry."""
     x_grid = mesh.x_norm
     y_grid = mesh.y_norm
     r_grid = mesh.r_norm
-
     zeros = np.zeros_like(x_grid)
 
-    if preset.projection == "RADIAL":
-        base_2d = _evaluate_sine_grid(x_grid, base_cycles, config.BASE_START)
-        relief_2d = _evaluate_sine_grid(
-            r_grid, relief_cycles, config.RELIEF_START
-        )
-        crust_2d = zeros
-    elif preset.projection == "WARPED":
-        relief_2d = _evaluate_sine_grid(
-            y_grid, relief_cycles, config.RELIEF_START
-        )
-        warp_offset = config.WARP_FACTOR * (relief_2d - 0.5)
-        x_warped = x_grid + warp_offset
+    if preset.composite_index < 0:
         base_2d = _evaluate_sine_grid(
-            x_warped, base_cycles, config.BASE_START
+            x_grid, base_cycles, config.BASE_START
         )
-        crust_2d = zeros
-    else:
-        base_2d = _evaluate_sine_grid(x_grid, base_cycles, config.BASE_START)
         relief_2d = _evaluate_sine_grid(
             y_grid, relief_cycles, config.RELIEF_START
         )
         crust_2d = _evaluate_sine_grid(
             r_grid, crust_cycles, config.CRUST_START
         )
+    elif not preset.uses_crust:
+        crust_2d = zeros
+        if is_warped:
+            relief_2d = _evaluate_sine_grid(
+                y_grid, relief_cycles, config.RELIEF_START
+            )
+            offset = config.WARP_FACTOR * (relief_2d - 0.5)
+            base_2d = _evaluate_sine_grid(
+                x_grid + offset, base_cycles, config.BASE_START
+            )
+        else:
+            base_2d = _evaluate_sine_grid(
+                x_grid, base_cycles, config.BASE_START
+            )
+            relief_2d = _evaluate_sine_grid(
+                r_grid, relief_cycles, config.RELIEF_START
+            )
+    else:
+        crust_2d = _evaluate_sine_grid(
+            r_grid, crust_cycles, config.CRUST_START
+        )
+        relief_2d = _evaluate_sine_grid(
+            y_grid, relief_cycles, config.RELIEF_START
+        )
+        if is_warped:
+            offset = config.WARP_FACTOR * (relief_2d - 0.5)
+            base_2d = _evaluate_sine_grid(
+                x_grid + offset, base_cycles, config.BASE_START
+            )
+        else:
+            base_2d = _evaluate_sine_grid(
+                x_grid, base_cycles, config.BASE_START
+            )
 
     raw_composite = preset.func(base_2d, relief_2d, crust_2d)
     return np.clip(raw_composite, 0.0, 1.0).astype(np.float32)

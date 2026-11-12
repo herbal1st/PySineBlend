@@ -26,6 +26,7 @@ class InspectorState:
     selected_panel_index: int = 0
     active_palette_index: int = 0
     is_inverted: bool = False
+    is_warped: bool = False
     net_enabled: bool = config.DEFAULT_NET_ENABLED
     net_intervals: float = config.DEFAULT_NET_INTERVALS
     net_bandwidth: float = config.DEFAULT_NET_BANDWIDTH
@@ -95,6 +96,11 @@ class InspectorState:
     def toggle_inversion(self) -> None:
         """Toggles color ramp inversion on and off."""
         self.is_inverted = not self.is_inverted
+        self.needs_rebuild_2d = True
+
+    def toggle_perspective(self) -> None:
+        """Toggles spatial perspective between standard/radial and warped."""
+        self.is_warped = not self.is_warped
         self.needs_rebuild_2d = True
 
     def toggle_net_mode(self) -> None:

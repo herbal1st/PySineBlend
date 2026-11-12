@@ -35,7 +35,10 @@ class InspectorState:
     crust_cycles: float = config.DEFAULT_CRUST_CYCLES
     tile_stepping_enabled: bool = False
     tile_size: int = config.DEFAULT_TILE_SIZE
+    needs_rebuild_1d: bool = True
     needs_rebuild_2d: bool = True
+    is_scrubbing: bool = False
+    scrub_timer: float = 0.0
     palettes: List[PaletteEntry] = field(
         default_factory=get_heatmap_catalog
     )
@@ -61,6 +64,34 @@ class InspectorState:
         inverted_lut = invert_lut(raw_lut)
         return display_name, inverted_lut, desc
 
+    def mark_scrubbing(self) -> None:
+        """Engages coarse scrubbing mode and resets the settle timer."""
+        self.is_scrubbing = True
+        self.scrub_timer = config.SCRUB_SETTLE_DELAY
+        self.needs_rebuild_1d = True
+        self.needs_rebuild_2d = True
+
+    def mark_discrete_change(self) -> None:
+        """Cancels active scrubbing and marks viewports for crisp rebuild."""
+        self.is_scrubbing = False
+        self.scrub_timer = 0.0
+        self.needs_rebuild_1d = True
+        self.needs_rebuild_2d = True
+
+    def tick_timers(self, dt: float) -> None:
+        """Advances settle debounce timer and triggers final refinement."""
+        if not self.is_scrubbing:
+            return
+
+        self.scrub_timer -= dt
+        if self.scrub_timer > 0.0:
+            return
+
+        self.is_scrubbing = False
+        self.scrub_timer = 0.0
+        self.needs_rebuild_1d = True
+        self.needs_rebuild_2d = True
+
     def cycle_formula_1d(self, direction: int) -> None:
         """Cycles 1D composite catalog and syncs corresponding 2D preset."""
         self.composite_index = (
@@ -72,7 +103,7 @@ class InspectorState:
                 self.preset_index_2d = idx
                 break
 
-        self.needs_rebuild_2d = True
+        self.mark_discrete_change()
 
     def cycle_formula_2d(self, direction: int) -> None:
         """Cycles all 2D presets and syncs 1D pointer when non-solo."""
@@ -84,29 +115,29 @@ class InspectorState:
         if target_comp >= 0:
             self.composite_index = target_comp
 
-        self.needs_rebuild_2d = True
+        self.mark_discrete_change()
 
     def cycle_palette(self, direction: int) -> None:
         """Cycles active color palette forward or backward."""
         self.active_palette_index = (
             self.active_palette_index + direction
         ) % len(self.palettes)
-        self.needs_rebuild_2d = True
+        self.mark_discrete_change()
 
     def toggle_inversion(self) -> None:
         """Toggles color ramp inversion on and off."""
         self.is_inverted = not self.is_inverted
-        self.needs_rebuild_2d = True
+        self.mark_discrete_change()
 
     def toggle_perspective(self) -> None:
         """Toggles spatial perspective between standard/radial and warped."""
         self.is_warped = not self.is_warped
-        self.needs_rebuild_2d = True
+        self.mark_discrete_change()
 
     def toggle_net_mode(self) -> None:
         """Toggles topographical relief net (isoline) mode on and off."""
         self.net_enabled = not self.net_enabled
-        self.needs_rebuild_2d = True
+        self.mark_discrete_change()
 
     def step_tile_size(self, direction: int) -> None:
         """Cycles tile stepping power-of-two sizes and toggles off at ends."""
@@ -131,17 +162,15 @@ class InspectorState:
                 else:
                     self.tile_size = next_size
 
-        self.needs_rebuild_2d = True
+        self.mark_discrete_change()
 
     def sync_to_mode(self, mode: int) -> None:
         """Aligns active formula when toggling viewports."""
         self.active_mode = mode
-        if mode == 1:
-            if self.preset_2d.composite_index < 0:
-                self.composite_index = 0
-                for idx, p in enumerate(PRESETS_2D):
-                    if p.composite_index == 0:
-                        self.preset_index_2d = idx
-                        break
-        else:
-            self.needs_rebuild_2d = True
+        if mode == 1 and self.preset_2d.composite_index < 0:
+            self.composite_index = 0
+            for idx, p in enumerate(PRESETS_2D):
+                if p.composite_index == 0:
+                    self.preset_index_2d = idx
+                    break
+        self.mark_discrete_change()

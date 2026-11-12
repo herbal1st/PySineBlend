@@ -13,6 +13,7 @@ from wave_inspector.wave_model import (
     CoordinateMesh2D,
     build_coarse_mesh_2d,
     build_coordinate_mesh_2d,
+    build_scrub_mesh_2d,
     build_wave_frame_1d,
     build_wave_frame_2d,
 )
@@ -43,6 +44,23 @@ class WaveMathInspector:
             config.SCREEN_WIDTH,
             config.SCREEN_HEIGHT,
         )
+        self.scrub_mesh_2d: CoordinateMesh2D = build_scrub_mesh_2d(
+            config.SCREEN_WIDTH,
+            config.SCREEN_HEIGHT,
+            config.SCRUB_SUB_SAMPLE_FACTOR,
+        )
+        if (
+            config.SCRUB_NET_SUB_SAMPLE_FACTOR
+            == config.SCRUB_SUB_SAMPLE_FACTOR
+        ):
+            self.scrub_net_mesh_2d: CoordinateMesh2D = self.scrub_mesh_2d
+        else:
+            self.scrub_net_mesh_2d = build_scrub_mesh_2d(
+                config.SCREEN_WIDTH,
+                config.SCREEN_HEIGHT,
+                config.SCRUB_NET_SUB_SAMPLE_FACTOR,
+            )
+
         self.coarse_meshes: Dict[int, CoordinateMesh2D] = {
             sz: build_coarse_mesh_2d(
                 config.SCREEN_WIDTH, config.SCREEN_HEIGHT, sz
@@ -65,6 +83,7 @@ class WaveMathInspector:
                 if not running:
                     break
 
+                self.state.tick_timers(dt)
                 self._render_active_mode()
                 pygame.display.flip()
         finally:
@@ -75,49 +94,53 @@ class WaveMathInspector:
         _, active_lut, _ = self.state.active_palette
 
         if self.state.active_mode == 1:
-            frame_1d = build_wave_frame_1d(
-                x_coordinates=self.x_coordinates,
-                formula=self.state.formula_1d,
-                base_cycles=self.state.base_cycles,
-                relief_cycles=self.state.relief_cycles,
-                crust_cycles=self.state.crust_cycles,
-                tile_stepping=self.state.tile_stepping_enabled,
-                tile_size=self.state.tile_size,
-            )
-            self.renderer_1d.render(self.state, frame_1d)
-        else:
-            if self.state.needs_rebuild_2d:
-                tile_sz = (
-                    self.state.tile_size
-                    if self.state.tile_stepping_enabled
-                    else 0
-                )
-                mesh = (
-                    self.coarse_meshes.get(tile_sz, self.continuous_mesh)
-                    if self.state.tile_stepping_enabled
-                    else self.continuous_mesh
-                )
-
-                heightfield_2d = build_wave_frame_2d(
-                    mesh=mesh,
-                    preset=self.state.preset_2d,
+            if self.state.needs_rebuild_1d:
+                frame_1d = build_wave_frame_1d(
+                    x_coordinates=self.x_coordinates,
+                    formula=self.state.formula_1d,
                     base_cycles=self.state.base_cycles,
                     relief_cycles=self.state.relief_cycles,
                     crust_cycles=self.state.crust_cycles,
-                    is_warped=self.state.is_warped,
-                    target_width=config.SCREEN_WIDTH,
-                    target_height=config.SCREEN_HEIGHT,
-                    tile_size=tile_sz,
+                    tile_stepping=self.state.tile_stepping_enabled,
+                    tile_size=self.state.tile_size,
                 )
-                self.renderer_2d.update_surface(
-                    heightfield=heightfield_2d,
-                    lut=active_lut,
-                    state=self.state,
-                )
-                self.state.needs_rebuild_2d = False
+                self.renderer_1d.update_surface(self.state, frame_1d)
+                self.state.needs_rebuild_1d = False
 
-            fps = self.clock.get_fps()
-            self.renderer_2d.render(self.state, fps)
+            self.renderer_1d.render()
+            return
+
+        if self.state.needs_rebuild_2d:
+            mesh = self._select_mesh_2d()
+            heightfield_2d = build_wave_frame_2d(
+                mesh=mesh,
+                preset=self.state.preset_2d,
+                base_cycles=self.state.base_cycles,
+                relief_cycles=self.state.relief_cycles,
+                crust_cycles=self.state.crust_cycles,
+                is_warped=self.state.is_warped,
+            )
+            self.renderer_2d.update_surface(
+                heightfield=heightfield_2d,
+                lut=active_lut,
+                state=self.state,
+            )
+            self.state.needs_rebuild_2d = False
+
+        fps = self.clock.get_fps()
+        self.renderer_2d.render(self.state, fps)
+
+    def _select_mesh_2d(self) -> CoordinateMesh2D:
+        """Selects active 2D coordinate mesh based on stepping and scrub."""
+        if self.state.tile_stepping_enabled:
+            return self.coarse_meshes.get(
+                self.state.tile_size, self.continuous_mesh
+            )
+        if self.state.is_scrubbing:
+            if self.state.net_enabled:
+                return self.scrub_net_mesh_2d
+            return self.scrub_mesh_2d
+        return self.continuous_mesh
 
 
 def run_app() -> None:

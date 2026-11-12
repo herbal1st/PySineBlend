@@ -15,23 +15,19 @@ class Renderer1D(BaseRenderer):
     """Draws component waves and their composite result in four panels."""
 
     def __init__(self, screen: pygame.Surface) -> None:
-        """Initializes typography and reusable scratch surface buffers."""
+        """Initializes base renderer and offscreen 1D frame cache."""
         super().__init__(screen)
-        panel_h: int = self.height // config.PANEL_COUNT
-        max_draw_h: int = (
-            panel_h - config.PANEL_TOP_MARGIN - config.PANEL_BOTTOM_MARGIN
-        )
-        self._panel_buffer: pygame.Surface = pygame.Surface(
-            (self.width, max_draw_h)
+        self.cached_surface: pygame.Surface = pygame.Surface(
+            (self.width, self.height)
         )
 
-    def render(
+    def update_surface(
         self,
         state: InspectorState,
         frame: WaveFrame1D,
     ) -> None:
-        """Renders all four oscilloscope panels and headers."""
-        self.screen.fill(config.BACKGROUND_COLOR)
+        """Rebuilds all four oscilloscope panels onto the cached surface."""
+        self.cached_surface.fill(config.BACKGROUND_COLOR)
         formula = state.formula_1d
         pal_name, active_lut, pal_desc = state.active_palette
 
@@ -126,25 +122,13 @@ class Renderer1D(BaseRenderer):
             line_lut=line_lut,
         )
 
-        self.draw_controls_card(is_dark_theme=False)
-
         p4_pal_text = f"PALETTE: {pal_name} ({pal_desc}) | [{net_status}]"
         self._draw_palette_card(p4_pal_text)
 
-    def _draw_palette_card(self, text: str) -> None:
-        """Renders active palette info in bottom-right footer of Panel 4."""
-        surf = self.font.render(text, True, config.COLOR_TITLE)
-        box_w = surf.get_width() + 16
-        box_h = surf.get_height() + 6
-
-        bg_card = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
-        bg_card.fill(config.COLOR_TITLE_CARD)
-
-        rx = self.width - box_w - config.PANEL_TITLE_X
-        ry = self.height - box_h - 10
-
-        self.screen.blit(bg_card, (rx, ry))
-        self.screen.blit(surf, (rx + 8, ry + 3))
+    def render(self) -> None:
+        """Blits the cached 1D frame and overlays the controls card."""
+        self.screen.blit(self.cached_surface, (0, 0))
+        self.draw_controls_card(is_dark_theme=False)
 
     def _draw_panel(
         self,
@@ -168,7 +152,7 @@ class Renderer1D(BaseRenderer):
         int_draw_h = int(draw_h)
 
         pygame.draw.line(
-            self.screen,
+            self.cached_surface,
             config.COLOR_PANEL_DIVIDER,
             (0, y_bottom),
             (self.width, y_bottom),
@@ -185,7 +169,11 @@ class Renderer1D(BaseRenderer):
         for level, color in grid_levels:
             lvl_y = int(round(y_draw_min - (level * draw_h)))
             pygame.draw.line(
-                self.screen, color, (0, lvl_y), (self.width, lvl_y), 1
+                self.cached_surface,
+                color,
+                (0, lvl_y),
+                (self.width, lvl_y),
+                1,
             )
 
         pixel_x = np.arange(self.width, dtype=np.int32)
@@ -210,7 +198,7 @@ class Renderer1D(BaseRenderer):
                 )
                 p0 = (int(pixel_x[x]), int(pixel_y[x]))
                 p1 = (int(pixel_x[x + 1]), int(pixel_y[x + 1]))
-                pygame.draw.line(self.screen, col, p0, p1, line_width)
+                pygame.draw.line(self.cached_surface, col, p0, p1, line_width)
         else:
             wave_color = (
                 config.COLOR_SILENCED_WAVE
@@ -219,12 +207,16 @@ class Renderer1D(BaseRenderer):
             )
             points = np.column_stack((pixel_x, pixel_y))
             pygame.draw.lines(
-                self.screen, wave_color, False, points.tolist(), line_width
+                self.cached_surface,
+                wave_color,
+                False,
+                points.tolist(),
+                line_width,
             )
 
         if is_selected:
             pygame.draw.rect(
-                self.screen,
+                self.cached_surface,
                 config.COLOR_SELECTION,
                 (1, y_top + 1, self.width - 2, panel_h - 2),
                 config.PANEL_SELECTION_WIDTH,
@@ -248,8 +240,8 @@ class Renderer1D(BaseRenderer):
 
         tx = config.PANEL_TITLE_X
         ty = y_top + config.PANEL_TITLE_Y
-        self.screen.blit(bg_card, (tx, ty))
-        self.screen.blit(
+        self.cached_surface.blit(bg_card, (tx, ty))
+        self.cached_surface.blit(
             title_surf,
             (tx + config.PANEL_TITLE_TEXT_X, ty + config.PANEL_TITLE_TEXT_Y),
         )
@@ -282,4 +274,19 @@ class Renderer1D(BaseRenderer):
 
         surf_transposed = np.transpose(buffer, (1, 0, 2))
         fill_surface = pygame.surfarray.make_surface(surf_transposed)
-        self.screen.blit(fill_surface, (0, y_draw_max))
+        self.cached_surface.blit(fill_surface, (0, y_draw_max))
+
+    def _draw_palette_card(self, text: str) -> None:
+        """Renders active palette info in bottom-right footer of Panel 4."""
+        surf = self.font.render(text, True, config.COLOR_TITLE)
+        box_w = surf.get_width() + 16
+        box_h = surf.get_height() + 6
+
+        bg_card = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
+        bg_card.fill(config.COLOR_TITLE_CARD)
+
+        rx = self.width - box_w - config.PANEL_TITLE_X
+        ry = self.height - box_h - 10
+
+        self.cached_surface.blit(bg_card, (rx, ry))
+        self.cached_surface.blit(surf, (rx + 8, ry + 3))

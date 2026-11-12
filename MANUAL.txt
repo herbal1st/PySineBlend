@@ -1,0 +1,288 @@
+ ____           ____                        ____    ___                      __   
+/\  _`\        /\  _`\   __                /\  _`\ /\_ \                    /\ \  
+\ \ \L\ \__  __\ \,\L\_\/\_\    ___      __\ \ \L\ \//\ \      __    ___    \_\ \ 
+ \ \ ,__/\ \/\ \\/_\__ \\/\ \ /' _ `\  /'__`\ \  _ <'\ \ \   /'__`\/' _ `\  /'_` \
+  \ \ \/\ \ \_\ \ /\ \L\ \ \ \/\ \/\ \/\  __/\ \ \L\ \\_\ \_/\  __//\ \/\ \/\ \L\ \
+   \ \_\ \/`____ \\ `\____\ \_\ \_\ \_\ \____\\ \____//\____\ \____\ \_\ \_\ \___,_\
+    \/_/  `/___/> \\/_____/\/_/\/_/\/_/\/____/ \/___/ \/____/\/____/\/_/\/_/\/__,_ /
+             /\___/                                                               
+             \/__/                                                                
+===============================================================================
+                 PYSINEBLEND - CONFIGURATION MANUAL & FIELD GUIDE
+===============================================================================
+
+[!] CROSS-REFERENCE NOTICE:
+    - This manual covers every global runtime, visual, and performance tuning
+      variable located in config.py.
+    - For architectural specifications, mathematical formulas, controls, and
+      visual mode explanations, refer to README.md.
+
+
+[DISPLAY & RESOLUTION SETTINGS]
+-------------------------------------------------------------------------------
+APP_TITLE                     : Window title displayed in the operating system
+                                title bar and taskbar.
+                                Metric: Text string (str).
+
+SCREEN_WIDTH                  : Horizontal width of the application window on
+                                your monitor in pixels.
+                                Metric: Pixels (int).
+
+SCREEN_HEIGHT                 : Vertical height of the application window on
+                                your monitor in pixels.
+                                Metric: Pixels (int).
+
+FPS                           : Target frame rate cap controlling how many
+                                times per second the screen refreshes and how
+                                smoothly held-key zooming animates.
+                                Metric: Hertz / Frames per second (int).
+
+BACKGROUND_COLOR              : Clear color used to paint the background behind
+                                the 1D oscilloscope signal panels (pure white).
+                                Metric: RGB color tuple (int, int, int).
+
+
+[VIEWPORT & STEPPING MODES]
+-------------------------------------------------------------------------------
+DEFAULT_VIEW_MODE             : Initial viewport opened on application startup:
+                                  1 = Mode 1: 1D Wave Oscilloscope
+                                  2 = Mode 2: 2D Spatial Synthesizer
+                                Metric: Integer mode selector [1 - 2] (int).
+
+DEFAULT_TILE_SIZE             : Starting width and height of each square block
+                                when pixel-block tile stepping is turned on.
+                                Metric: Pixels (int).
+
+MIN_TILE_SIZE                 : Smallest power-of-two tile block size allowed
+                                when stepping tiles finer (e.g. 8px).
+                                Metric: Pixels (int).
+
+MAX_TILE_SIZE                 : Largest power-of-two tile block size allowed
+                                before cycling wraps back to smooth rendering.
+                                Metric: Pixels (int).
+
+WARP_FACTOR                   : Coordinate bending strength used when Warped
+                                perspective ([P]) is active in Mode 2. Higher
+                                values twist straight ridge bands further into
+                                serpentine mountain ranges and fault lines.
+                                Metric: Fraction multiplier [0.0 - 1.0] (float).
+
+
+[RELIEF NET (ISOLINE) SETTINGS]
+-------------------------------------------------------------------------------
+DEFAULT_NET_ENABLED           : Starting state of the Topographical Relief Net
+                                (contour map view) when the app launches.
+                                In Mode 1, swaps the solid color fill for a
+                                colored line trace; in Mode 2, switches to a
+                                contour-line map.
+                                Metric: Toggle boolean (bool).
+
+DEFAULT_NET_INTERVALS         : Number of height slices dividing terrain from
+                                sea level (0.0) to mountain peaks (1.0). For
+                                example, 9.0 intervals draw 10 contour rings.
+                                Metric: Float interval count (float).
+
+DEFAULT_NET_BANDWIDTH         : Height tolerance used in settled continuous 2D
+                                mode to decide how thick each contour line is.
+                                Higher values make wider, easier-to-see lines;
+                                lower values draw razor-thin curves.
+                                Metric: Float height tolerance (float).
+
+COLOR_NET_BACKGROUND          : Deep midnight-slate background color drawn
+                                behind contour lines when Net mode is active
+                                in Mode 2.
+                                Metric: RGB color tuple (int, int, int).
+
+
+[WAVE FREQUENCY DEFAULTS]
+-------------------------------------------------------------------------------
+DEFAULT_BASE_CYCLES           : Initial number of wave cycles across the screen
+                                for Base Detail (controls how tightly packed
+                                local hills, ridges, and valleys appear).
+                                Metric: Cycles across screen (float).
+
+DEFAULT_RELIEF_CYCLES         : Initial number of wave cycles for the Relief
+                                Multiplier (controls how often terrain swells
+                                into mountain zones versus flat plains).
+                                Metric: Cycles across screen (float).
+
+DEFAULT_CRUST_CYCLES          : Initial number of wave cycles for Continental
+                                Crust (the broad tectonic ground floor lifting
+                                continents above ocean basins).
+                                Metric: Cycles across screen (float).
+
+
+[STARTING ELEVATION PHASE OFFSETS]
+-------------------------------------------------------------------------------
+BASE_START                    : Starting height of the Base Detail wave at the
+                                left edge (1D) or center/edge baseline (0.50
+                                starts halfway up the slope).
+                                Metric: Normalized height [0.0 - 1.0] (float).
+
+RELIEF_START                  : Starting height of the Relief Multiplier wave
+                                (1.00 starts at full mountain peak strength).
+                                Metric: Normalized height [0.0 - 1.0] (float).
+
+CRUST_START                   : Starting height of the Continental Crust wave
+                                (0.00 starts at deep ocean floor level).
+                                Metric: Normalized height [0.0 - 1.0] (float).
+
+
+[MATHEMATICAL ELEVATION BUDGETS]
+-------------------------------------------------------------------------------
+CRUST_BUDGET                  : Maximum share of total height reserved for the
+                                Continental Crust wave (e.g. 0.35 = 35%).
+                                In budgeted formulas, CRUST_BUDGET plus
+                                RELIEF_BUDGET equals 1.000 so peaks never
+                                flatten out against the top ceiling.
+                                Metric: Fraction share [0.0 - 1.0] (float).
+
+RELIEF_BUDGET                 : Maximum share of total height reserved for
+                                local mountains and hills (e.g. 0.65 = 65%).
+                                Metric: Fraction share [0.0 - 1.0] (float).
+
+MIN_RELIEF_FACTOR             : Minimum relief floor ensuring that even in the
+                                flattest plains or lowlands, gentle ripples
+                                and small hills never disappear completely.
+                                Metric: Fraction multiplier [0.0 - 1.0] (float).
+
+
+[FREQUENCY TUNING RATES & CLAMPS]
+-------------------------------------------------------------------------------
+CYCLE_ZOOM_RATE               : Smooth zoom speed when holding LEFT or RIGHT
+                                arrows. Wave frequency multiplies or divides
+                                geometrically each second so zooming feels
+                                steady at both low and high cycle counts.
+                                Metric: Rate multiplier per second (float).
+
+BASE_MIN_CYCLES / MAX_CYCLES  : Lower and upper safety limits preventing Base
+                                Detail cycles from zooming into invisible or
+                                strobing patterns.
+                                Metric: Cycles across screen (float).
+
+RELIEF_MIN_CYCLES / MAX_CYCLES: Lower and upper safety limits restricting how
+                                far Relief Multiplier cycles can be zoomed.
+                                Metric: Cycles across screen (float).
+
+CRUST_MIN_CYCLES / MAX_CYCLES : Lower and upper safety limits restricting how
+                                far Continental Crust cycles can be zoomed.
+                                Metric: Cycles across screen (float).
+
+
+[INTERACTIVE SCRUBBING THROTTLING]
+-------------------------------------------------------------------------------
+SCRUB_SUB_SAMPLE_FACTOR       : Temporary resolution divider used in Mode 2
+                                while actively holding LEFT or RIGHT to zoom in
+                                smooth shaded mode (when tile stepping is off).
+                                A value of 4 evaluates roughly 1/16th as many
+                                points per frame and smoothly scales them up,
+                                keeping zooming fluid before snapping to full
+                                clarity once you release the key.
+                                Metric: Integer divider (int).
+
+SCRUB_NET_SUB_SAMPLE_FACTOR   : Dedicated resolution divider used while zooming
+                                in Mode 2 with Relief Net ([N]) enabled. Using
+                                a slightly finer divider (e.g. 3 or 2) keeps
+                                temporary contour lines thinner and cleaner,
+                                while higher values (e.g. 4) boost framerate on
+                                slower hardware.
+                                Metric: Integer divider (int).
+
+SCRUB_SETTLE_DELAY            : Short wait time after you release a zoom key
+                                before Mode 2 automatically renders the final
+                                full-resolution 1760x990 frame. Prevents wasted
+                                full-screen recalculations mid-adjustment.
+                                Metric: Elapsed seconds (float).
+
+
+[INTERFACE COLORS & METRICS]
+-------------------------------------------------------------------------------
+COLOR_PANEL_DIVIDER           : Light grey line color separating the four
+                                stacked panels in the 1D oscilloscope.
+                                Metric: RGB color tuple (int, int, int).
+
+COLOR_GRID                    : Soft color used for interior horizontal height
+                                reference guides (0.25, 0.50, 0.75) in 1D.
+                                Metric: RGB color tuple (int, int, int).
+
+COLOR_WAVE                    : Primary dark ink color used to draw active
+                                wave curves in the 1D oscilloscope.
+                                Metric: RGB color tuple (int, int, int).
+
+COLOR_SILENCED_WAVE           : Muted grey color used to draw the flat line in
+                                Panel 3 when a 2-layer formula ignores crust.
+                                Metric: RGB color tuple (int, int, int).
+
+COLOR_SELECTION               : High-contrast blue used to highlight the active
+                                focused panel in 1D and the channel focus box
+                                in 2D.
+                                Metric: RGB color tuple (int, int, int).
+
+COLOR_TITLE                   : Dark crisp text color for active panel titles.
+                                Metric: RGB color tuple (int, int, int).
+
+COLOR_MUTED_TITLE             : Soft grey text color for silenced panel titles.
+                                Metric: RGB color tuple (int, int, int).
+
+COLOR_TITLE_CARD              : Translucent white card background placed behind
+                                1D panel titles and footer labels so text stays
+                                readable over wave lines.
+                                Metric: RGBA color tuple (int, int, int, int).
+
+COLOR_HUD_CARD_2D             : Translucent dark slate background placed behind
+                                HUD overlays and controls in Mode 2.
+                                Metric: RGBA color tuple (int, int, int, int).
+
+COLOR_HUD_TEXT_ACTIVE         : Bright amber-gold highlight color used for the
+                                top status line in Mode 2 HUD cards.
+                                Metric: RGB color tuple (int, int, int).
+
+COLOR_HUD_TEXT_NORMAL         : Soft silver-white color used for general stats
+                                and formula readouts inside Mode 2 HUD cards.
+                                Metric: RGB color tuple (int, int, int).
+
+
+[PANEL DIMENSIONS & THICKNESS]
+-------------------------------------------------------------------------------
+PANEL_COUNT                   : Number of vertically stacked panels drawn in
+                                Mode 1 (Base, Relief, Crust, Composite Result).
+                                Metric: Panel count (int).
+
+PANEL_TOP_MARGIN              : Empty space at the top of each 1D panel so wave
+                                peaks do not collide with the title card.
+                                Metric: Pixels (int).
+
+PANEL_BOTTOM_MARGIN           : Empty space at the bottom of Panels 1, 2, and 3
+                                above the panel divider line.
+                                Metric: Pixels (int).
+
+PANEL_COMPOSITE_BOTTOM_MARGIN : Extra bottom padding in Panel 4 leaving room
+                                for the bottom controls and palette footer.
+                                Metric: Pixels (int).
+
+PANEL_TITLE_X / Y             : Top-left offset positioning each panel's title
+                                card inside its panel box.
+                                Metric: Pixels (int).
+
+PANEL_TITLE_TEXT_X / Y        : Inner text padding inside each title card box.
+                                Metric: Pixels (int).
+
+PANEL_DIVIDER_WIDTH           : Line thickness of the horizontal dividers
+                                separating the four 1D panels.
+                                Metric: Pixels (int).
+
+PANEL_SELECTION_WIDTH         : Line thickness of the blue focus border around
+                                the active selected panel or channel card.
+                                Metric: Pixels (int).
+
+COMPONENT_LINE_WIDTH          : Stroke thickness of the component wave curves
+                                (Base, Relief, Crust) in Panels 1 to 3.
+                                Metric: Pixels (int).
+
+COMPOSITE_LINE_WIDTH          : Thicker stroke used for the final blended wave
+                                curve in Panel 4 so it stands out clearly.
+                                Metric: Pixels (int).
+
+===============================================================================
+[!] END OF MANUAL | MAINTAIN ALIGNMENT WITH CONFIG.PY AND README.MD
+===============================================================================

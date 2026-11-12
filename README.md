@@ -113,6 +113,12 @@ Panel 4 features dual-mode visualization:
     - Net Mode (Key [N]): Replaces the fill with a crisp, multi-colored vector
                      trace line colored according to height.
 
+Idle Frame Caching:
+Mode 1 renders its four panels, fills, and trace lines onto an offscreen
+cached surface and only rebuilds when wave frequencies, focus, formulas,
+stepping, or palettes change. While idle, redrawing the viewport takes a
+single surface copy.
+
 
 MODE 2: 2D SPATIAL SYNTHESIZER (Key [2])
 -------------------------------------------------------------------------------
@@ -168,31 +174,45 @@ Mode 2 allows inspecting isolated wave geometry alongside composite formulas:
     - Presets 14 to 15 : Advanced 3-Layer Hybrids.
 
 
-[7.0 DISCRETE TILE STEPPING & COARSE CENTROID EVALUATION]
+[7.0 DISCRETE TILE STEPPING & INTERACTIVE SCRUBBING]
 -------------------------------------------------------------------------------
 Pressing [SPACE] and [SHIFT + SPACE] cycles the terrain through a power-of-two
 tile quantization ring, bounded by minimum and maximum block clamps defined
 in config.py:
     OFF -> Smallest Size -> ... -> Largest Size -> OFF
 
-Centroid Grid Anchoring & 99% Performance Acceleration:
-Tile sampling evaluates elevation at the exact centroid (+0.5 stride) of
-each tile block rather than its top-left edge. This ensures radial islands,
-concentric rings, and diagonal ridges remain mathematically centered and
-symmetrical across all four quadrants without shifting the visual screen grid.
+Centroid Grid Anchoring & Color-Before-Expand:
+Tile sampling evaluates elevation at the exact center (+0.5 stride) of each
+tile block rather than its top-left corner. This ensures radial islands,
+concentric rings, and diagonal ridges remain centered and symmetrical across
+all four quadrants without shifting the screen grid.
 
-To maximize performance, wave math is evaluated strictly on coarse tile
-centroids (e.g., computing only 6,820 points at 16px tile size instead of
-1.74 million full-resolution pixels). The coarse matrix is then instantly
-expanded to full screen dimensions using np.repeat() in fast, compiled C
-memory operations (<0.02 ms), keeping zooming and frequency tuning completely
-fluid.
+To maximize speed, wave math and color Look-Up Table mapping happen directly
+on the tiny coarse grid (e.g., evaluating and coloring only 6,820 points at
+16px tile size instead of 1.74 million full-screen pixels). The compact colored
+surface is then stretched cleanly onto the display surface via hardware-
+accelerated SDL scaling, avoiding large intermediate buffers completely.
 
 Visual Representation Across Viewports:
     - In 1D: Smooth sine curves break into crisp, horizontal step-pyramid
              staircases, illustrating discrete elevation plateaus.
     - In 2D: Smooth gradients transform into retro pixel blocks or macro-
              biome chunks (similar to a classic 16-bit overworld map).
+
+Interactive Smooth Scrubbing & Settle-Debounce (Mode 2):
+When Tile Stepping is OFF and you hold LEFT or RIGHT to zoom wavelengths in
+Mode 2, the engine temporarily shifts into a lighter scrubbing preview instead
+of recalculating all 1.74 million pixels every frame:
+    - Endpoint-Aligned (N + 1) Grid: Evaluates a precomputed sub-sampled mesh
+      (SCRUB_SUB_SAMPLE_FACTOR, default 4x smaller) whose outer edges align
+      exactly with the full-resolution screen corners so terrain never shifts.
+    - Smooth Upscaling: Colors the compact preview grid first and stretches
+      it smoothly onto the screen using bilinear scaling, keeping visual style
+      consistent without switching into square tiles.
+    - Automatic Settle Refinement: Once you release the zoom key and a short
+      grace delay elapses (SCRUB_SETTLE_DELAY), Mode 2 automatically rebuilds
+      once at full 1760x990 clarity. One-shot toggles (palettes, formulas,
+      perspectives, resets) bypass scrubbing and render crisply right away.
 
 
 [8.0 DIAGNOSTIC COLOR SUITE, INVERSION & RELIEF NET]
@@ -212,21 +232,26 @@ time. In Greyscale, this creates an X-ray/film-negative effect; in thermal
 palettes, it inverts peak-versus-valley visual polarity.
 
 Topographical Relief Net / Isoline Mode (Key [N]):
-Pressing [N] turns the visualization into a topographical isoline net:
+Pressing [N] turns the visualization into a topographical contour map:
     - In 1D: Toggles between solid hypsometric scanline fill and a colored
              vector line trace for the composite curve.
     - In 2D: Replaces the continuous raster surface with a dark blueprint
-             vector contour net, evaluating elevation slices across the field.
+             contour map, tracing elevation slices across the field.
 
-Dual Evaluation Mechanics:
-    - Continuous Mode : Evaluates contour lines using a narrow tolerance
-                        bandwidth, creating smooth sub-pixel curves.
-    - Discrete Tile Mode: Automatically shifts to geometric cardinal cell-
-                        crossing (h_min <= Level <= h_max). Testing whether
-                        a level passes through a tile's elevation span
-                        guarantees unbroken, strictly 1-tile-thick perimeter
-                        outlines with zero gaps on steep cliffs and zero
-                        blobs on flat plateaus.
+Triple Evaluation Mechanics:
+    - Continuous Mode (Settled): Evaluates contour lines using a narrow height
+      tolerance bandwidth, creating thin, smooth sub-pixel curves.
+    - Interactive Scrubbing Net Mode: While holding LEFT or RIGHT with Net ON
+      (and Tile Stepping OFF), Mode 2 evaluates a dedicated (N + 1) grid
+      (SCRUB_NET_SUB_SAMPLE_FACTOR) using one-sided forward neighbor checks
+      (right and down). Testing only leading crossings keeps preview lines
+      unbroken, thin, and free of flat-valley blobs or screen-edge wrap-around
+      before snapping back to smooth tolerance curves on settle.
+    - Discrete Tile Mode (Net + Tiles): Instead of scaling up thick blocks or
+      scanning 1.74 million pixels, Mode 2 checks horizontal and vertical tile
+      boundaries directly on the compact tile grid and stamps strictly
+      1-pixel-thick colored outlines along tile seams via zero-copy strided
+      surface slices.
 
 
 [9.0 CONTROLS & KEYBOARD SHORTCUTS]
@@ -261,8 +286,9 @@ Dual Evaluation Mechanics:
 
 [10.0 CONFIGURATION]
 -------------------------------------------------------------------------------
-All global defaults, display parameters, and balance metrics reside in
-config.py:
+All global defaults, display parameters, scrubbing dividers, and UI metrics
+reside in config.py. Refer to MANUAL.txt for a complete field-by-field
+reference and unit guide. Key configuration groups include:
 
     SCREEN_WIDTH / HEIGHT     : Desktop window resolution in pixels.
     FPS                       : Display refresh rate target cap (Hz).
@@ -281,6 +307,10 @@ config.py:
     *_MIN / MAX_CYCLES        : Frequency tuning bounds preventing artifacts.
     CYCLE_ZOOM_RATE           : Continuous exponential zoom multiplier rate.
 
+    SCRUB_SUB_SAMPLE_FACTOR   : Smooth preview downscaling divider while zooming.
+    SCRUB_NET_SUB_SAMPLE_FACTOR: Dedicated preview divider for Net mode zooming.
+    SCRUB_SETTLE_DELAY        : Settle wait time (seconds) before full-res snap.
+
     CRUST / RELIEF_BUDGET     : Mathematical elevation budget shares.
     MIN_RELIEF_FACTOR         : Minimum relief floor preserving low ripples.
 
@@ -292,19 +322,20 @@ pysineblend/
 ├── main.py                    # Root bootstrap entry point
 ├── config.py                  # Central runtime settings and layout constants
 ├── requirements.txt           # Minimal dependencies (numpy, pygame-ce)
+├── MANUAL.txt                 # Complete config.py variable guide & metrics
 ├── README.md                  # System specification and documentation
 │
 └── wave_inspector/            # Pure Wave Inspector Package
-    ├── app.py                 # Application lifecycle, loop, and mesh cache
+    ├── app.py                 # Application lifecycle, timers, and mesh cache
     ├── formulas.py            # Master formula catalog, math, and 2D specs
     ├── heatmaps.py            # 1,024-slot LUT bakes and array inversion
     ├── input_handler.py       # Event routing and held-key frequency zoom
-    ├── state.py               # Shared mutable state machine and sync logic
-    ├── wave_model.py          # Pure NumPy 1D and 2D wave synthesis engine
+    ├── state.py               # Shared state machine, scrubbing, and sync
+    ├── wave_model.py          # Pure NumPy 1D, 2D, tile, and scrubbing meshes
     └── renderers/             # Viewport Renderers
         ├── base_renderer.py   # Typography and dynamic HUD card drawer
-        ├── renderer_1d.py     # 4-panel oscilloscope and hypsometric fill
-        └── renderer_2d.py     # 2D surface baking and isoline net generator
+        ├── renderer_1d.py     # 4-panel oscilloscope with offscreen caching
+        └── renderer_2d.py     # Color-before-expand 2D baking & contour nets
 
 
 [12.0 LICENSE]

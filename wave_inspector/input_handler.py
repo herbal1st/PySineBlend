@@ -68,43 +68,6 @@ class InputHandler:
 
         return True
 
-    def _move_channel_focus(
-        self,
-        state: InspectorState,
-        direction: int,
-    ) -> None:
-        """Navigates focus across valid input channels for active formula."""
-        formula = (
-            state.formula_1d if state.active_mode == 1 else state.preset_2d
-        )
-        channel_count = 3 if formula.uses_crust else 2
-        state.selected_panel_index = (
-            state.selected_panel_index + direction
-        ) % channel_count
-
-    def _clamp_focus_for_active_mode(self, state: InspectorState) -> None:
-        """Clamps channel focus off crust when formula does not use crust."""
-        formula = (
-            state.formula_1d if state.active_mode == 1 else state.preset_2d
-        )
-        if not formula.uses_crust and state.selected_panel_index >= 2:
-            state.selected_panel_index = 1
-
-    def _reset_cycles(self, state: InspectorState, mods: int) -> None:
-        """Resets focused channel or all channels to default frequencies."""
-        if mods & pygame.KMOD_SHIFT:
-            state.base_cycles = config.DEFAULT_BASE_CYCLES
-            state.relief_cycles = config.DEFAULT_RELIEF_CYCLES
-            state.crust_cycles = config.DEFAULT_CRUST_CYCLES
-        elif state.selected_panel_index == 0:
-            state.base_cycles = config.DEFAULT_BASE_CYCLES
-        elif state.selected_panel_index == 1:
-            state.relief_cycles = config.DEFAULT_RELIEF_CYCLES
-        elif state.selected_panel_index == 2:
-            state.crust_cycles = config.DEFAULT_CRUST_CYCLES
-
-        state.needs_rebuild_2d = True
-
     def _handle_held_keys(self, state: InspectorState, dt: float) -> None:
         """Scales active channel frequency continuously via held arrows."""
         keys = pygame.key.get_pressed()
@@ -142,7 +105,46 @@ class InputHandler:
                 config.CRUST_MAX_CYCLES,
             )
 
-        state.needs_rebuild_2d = True
+        state.mark_scrubbing()
+
+    def _move_channel_focus(
+        self,
+        state: InspectorState,
+        direction: int,
+    ) -> None:
+        """Navigates focus across valid input channels for active formula."""
+        formula = (
+            state.formula_1d if state.active_mode == 1 else state.preset_2d
+        )
+        channel_count = 3 if formula.uses_crust else 2
+        state.selected_panel_index = (
+            state.selected_panel_index + direction
+        ) % channel_count
+        state.needs_rebuild_1d = True
+
+    def _clamp_focus_for_active_mode(self, state: InspectorState) -> None:
+        """Clamps channel focus off crust when formula does not use crust."""
+        formula = (
+            state.formula_1d if state.active_mode == 1 else state.preset_2d
+        )
+        if not formula.uses_crust and state.selected_panel_index >= 2:
+            state.selected_panel_index = 1
+            state.needs_rebuild_1d = True
+
+    def _reset_cycles(self, state: InspectorState, mods: int) -> None:
+        """Resets focused channel or all channels to default frequencies."""
+        if mods & pygame.KMOD_SHIFT:
+            state.base_cycles = config.DEFAULT_BASE_CYCLES
+            state.relief_cycles = config.DEFAULT_RELIEF_CYCLES
+            state.crust_cycles = config.DEFAULT_CRUST_CYCLES
+        elif state.selected_panel_index == 0:
+            state.base_cycles = config.DEFAULT_BASE_CYCLES
+        elif state.selected_panel_index == 1:
+            state.relief_cycles = config.DEFAULT_RELIEF_CYCLES
+        elif state.selected_panel_index == 2:
+            state.crust_cycles = config.DEFAULT_CRUST_CYCLES
+
+        state.mark_discrete_change()
 
     @staticmethod
     def _apply_scale(

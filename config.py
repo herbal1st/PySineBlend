@@ -43,6 +43,11 @@ RELIEF_MAX_CYCLES: float = 30.0  # cycles
 CRUST_MIN_CYCLES: float = 0.25  # cycles
 CRUST_MAX_CYCLES: float = 20.0  # cycles
 
+# ------ Interactive Scrubbing Throttling ------
+SCRUB_SUB_SAMPLE_FACTOR: int = 4  # divider
+SCRUB_NET_SUB_SAMPLE_FACTOR: int = 3  # divider
+SCRUB_SETTLE_DELAY: float = 0.12  # seconds
+
 # ------ Interface Colors & Metrics ------
 COLOR_PANEL_DIVIDER: tuple[int, int, int] = (200, 205, 215)  # rgb
 COLOR_GRID: tuple[int, int, int] = (230, 233, 240)  # rgb

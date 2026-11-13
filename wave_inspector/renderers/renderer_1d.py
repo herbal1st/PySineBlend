@@ -106,10 +106,12 @@ class Renderer1D(BaseRenderer):
         min_v = float(np.min(frame.composite))
         max_v = float(np.max(frame.composite))
         layer_tag = "3-LAYER" if formula.uses_crust else "2-LAYER"
+        p4_selected = state.selected_panel_index == 3
+        p4_tag = " [ALL ACTIVE]" if p4_selected else ""
         p4_title = (
             f"PANEL 4: [{state.composite_index + 1}/"
             f"{len(COMPOSITE_CATALOG)}] [{layer_tag}] "
-            f"{formula.name}: {formula.shorthand} | "
+            f"{formula.name}{p4_tag}: {formula.shorthand} | "
             f"RANGE: [{min_v:.3f}, {max_v:.3f}]"
         )
         self._draw_panel(
@@ -117,6 +119,7 @@ class Renderer1D(BaseRenderer):
             wave_data=frame.composite,
             title=p4_title,
             line_width=config.COMPOSITE_LINE_WIDTH,
+            is_selected=p4_selected,
             margin_bottom=config.PANEL_COMPOSITE_BOTTOM_MARGIN,
             fill_lut=fill_lut,
             line_lut=line_lut,

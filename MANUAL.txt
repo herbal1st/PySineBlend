@@ -82,10 +82,10 @@ DEFAULT_NET_INTERVALS         : Number of height slices dividing terrain from
                                 example, 9.0 intervals draw 10 contour rings.
                                 Metric: Float interval count (float).
 
-DEFAULT_NET_BANDWIDTH         : Height tolerance used in settled continuous 2D
-                                mode to decide how thick each contour line is.
-                                Higher values make wider, easier-to-see lines;
-                                lower values draw razor-thin curves.
+DEFAULT_NET_BANDWIDTH         : Height tolerance used in continuous 2D mode to
+                                decide how thick each contour line is. Higher
+                                values make wider, easier-to-see lines; lower
+                                values draw razor-thin curves.
                                 Metric: Float height tolerance (float).
 
 COLOR_NET_BACKGROUND          : Deep midnight-slate background color drawn
@@ -115,8 +115,8 @@ DEFAULT_CRUST_CYCLES          : Initial number of wave cycles for Continental
 [STARTING ELEVATION PHASE OFFSETS]
 -------------------------------------------------------------------------------
 BASE_START                    : Starting height of the Base Detail wave at the
-                                left edge (1D) or center/edge baseline (0.50
-                                starts halfway up the slope).
+                                origin (0.50 starts halfway up the slope, 1.00
+                                starts at a peak).
                                 Metric: Normalized height [0.0 - 1.0] (float).
 
 RELIEF_START                  : Starting height of the Relief Multiplier wave
@@ -124,21 +124,22 @@ RELIEF_START                  : Starting height of the Relief Multiplier wave
                                 Metric: Normalized height [0.0 - 1.0] (float).
 
 CRUST_START                   : Starting height of the Continental Crust wave
-                                (0.00 starts at deep ocean floor level).
+                                (0.00 starts at deep ocean floor level, 1.00
+                                starts at a continental peak).
                                 Metric: Normalized height [0.0 - 1.0] (float).
 
 
 [MATHEMATICAL ELEVATION BUDGETS]
 -------------------------------------------------------------------------------
 CRUST_BUDGET                  : Maximum share of total height reserved for the
-                                Continental Crust wave (e.g. 0.35 = 35%).
+                                Continental Crust wave (e.g. 0.40 = 40%).
                                 In budgeted formulas, CRUST_BUDGET plus
                                 RELIEF_BUDGET equals 1.000 so peaks never
                                 flatten out against the top ceiling.
                                 Metric: Fraction share [0.0 - 1.0] (float).
 
 RELIEF_BUDGET                 : Maximum share of total height reserved for
-                                local mountains and hills (e.g. 0.65 = 65%).
+                                local mountains and hills (e.g. 0.60 = 60%).
                                 Metric: Fraction share [0.0 - 1.0] (float).
 
 MIN_RELIEF_FACTOR             : Minimum relief floor ensuring that even in the
@@ -150,40 +151,49 @@ MIN_RELIEF_FACTOR             : Minimum relief floor ensuring that even in the
 [FREQUENCY TUNING RATES & CLAMPS]
 -------------------------------------------------------------------------------
 CYCLE_ZOOM_RATE               : Smooth zoom speed when holding LEFT or RIGHT
-                                arrows. Wave frequency multiplies or divides
-                                geometrically each second so zooming feels
+                                arrows (unmodified zooms all layers; SHIFT
+                                zooms only the selected layer). Wave cycles
+                                scale smoothly per second so zooming feels
                                 steady at both low and high cycle counts.
                                 Metric: Rate multiplier per second (float).
 
-BASE_MIN_CYCLES / MAX_CYCLES  : Lower and upper safety limits preventing Base
-                                Detail cycles from zooming into invisible or
+MOUSE_ZOOM_SENSITIVITY        : Controls how quickly waves zoom when dragging
+                                horizontally with the Right Mouse Button (RMB)
+                                across Modes 1 and 2. Uses smooth exponential
+                                scaling per pixel dragged.
+                                Metric: Zoom rate per pixel (float).
+
+BASE_MIN_CYCLES               : Lower and upper safety limits preventing Base
+BASE_MAX_CYCLES                 Detail cycles from zooming into invisible or
                                 strobing patterns.
                                 Metric: Cycles across screen (float).
 
-RELIEF_MIN_CYCLES / MAX_CYCLES: Lower and upper safety limits restricting how
-                                far Relief Multiplier cycles can be zoomed.
+RELIEF_MIN_CYCLES             : Lower and upper safety limits restricting how
+RELIEF_MAX_CYCLES               far Relief Multiplier cycles can be zoomed.
                                 Metric: Cycles across screen (float).
 
-CRUST_MIN_CYCLES / MAX_CYCLES : Lower and upper safety limits restricting how
-                                far Continental Crust cycles can be zoomed.
+CRUST_MIN_CYCLES              : Lower and upper safety limits restricting how
+CRUST_MAX_CYCLES                far Continental Crust cycles can be zoomed.
                                 Metric: Cycles across screen (float).
 
 
 [INTERACTIVE SCRUBBING THROTTLING]
 -------------------------------------------------------------------------------
 SCRUB_SUB_SAMPLE_FACTOR       : Temporary resolution divider used in Mode 2
-                                while actively holding LEFT or RIGHT to zoom in
-                                smooth shaded mode (when tile stepping is off).
-                                A value of 4 evaluates roughly 1/16th as many
-                                points per frame and smoothly scales them up,
-                                keeping zooming fluid before snapping to full
-                                clarity once you release the key.
+                                while zooming frequencies or dragging wave
+                                positions in smooth mode (when tile stepping is
+                                off). A value of 4 evaluates ~1/16th as many
+                                points per frame—using smooth upscaling for
+                                color mode and coarse-cell culling for crisp
+                                1px Relief Net lines—before snapping to full
+                                clarity once you stop adjusting.
                                 Metric: Integer divider (int).
 
-SCRUB_SETTLE_DELAY            : Short wait time after you release a zoom key
-                                before Mode 2 automatically renders the final
-                                full-resolution 1760x990 frame. Prevents wasted
-                                full-screen recalculations mid-adjustment.
+SCRUB_SETTLE_DELAY            : Short wait time after releasing a keyboard zoom
+                                key before Mode 2 renders the final full-res
+                                1760x990 frame (mouse drags settle immediately
+                                on button release). Prevents wasted full-screen
+                                recalculations between quick key taps.
                                 Metric: Elapsed seconds (float).
 
 
@@ -206,8 +216,8 @@ COLOR_SILENCED_WAVE           : Muted grey color used to draw the flat line in
                                 Metric: RGB color tuple (int, int, int).
 
 COLOR_SELECTION               : High-contrast blue used to highlight the active
-                                focused panel in 1D and the channel focus box
-                                in 2D.
+                                focused panel in 1D (including Panel 4 all-
+                                layer focus) and the channel focus card in 2D.
                                 Metric: RGB color tuple (int, int, int).
 
 COLOR_TITLE                   : Dark crisp text color for active panel titles.
@@ -252,11 +262,12 @@ PANEL_COMPOSITE_BOTTOM_MARGIN : Extra bottom padding in Panel 4 leaving room
                                 for the bottom controls and palette footer.
                                 Metric: Pixels (int).
 
-PANEL_TITLE_X / Y             : Top-left offset positioning each panel's title
-                                card inside its panel box.
+PANEL_TITLE_X                 : Top-left horizontal and vertical offsets placing
+PANEL_TITLE_Y                   each panel's title card inside its panel box.
                                 Metric: Pixels (int).
 
-PANEL_TITLE_TEXT_X / Y        : Inner text padding inside each title card box.
+PANEL_TITLE_TEXT_X            : Inner horizontal and vertical text padding
+PANEL_TITLE_TEXT_Y              inside each title card box.
                                 Metric: Pixels (int).
 
 PANEL_DIVIDER_WIDTH           : Line thickness of the horizontal dividers

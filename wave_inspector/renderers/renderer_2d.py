@@ -251,7 +251,7 @@ class Renderer2D(BaseRenderer):
         state: InspectorState,
         uses_crust: bool,
     ) -> None:
-        """Draws highlighted channel card framed in active blue border."""
+        """Draws channel strip and records clickable layer hitboxes."""
         col_active = (85, 155, 255)
         col_muted = (140, 145, 155)
         col_divider = (80, 85, 95)
@@ -267,25 +267,28 @@ class Renderer2D(BaseRenderer):
                 col_active if state.selected_panel_index == 2 else col_muted
             )
             c_text = f"C: {state.crust_cycles:.2f}"
+            c_id: Optional[int] = 2
         else:
             c_col = col_silenced
             c_text = "C: Silenced"
+            c_id = None
 
-        segments: List[Tuple[str, Tuple[int, int, int]]] = [
-            ("CHANNEL FOCUS: [ ", col_label),
-            (f"B: {state.base_cycles:.2f}", b_col),
-            (" | ", col_divider),
-            (f"R: {state.relief_cycles:.2f}", r_col),
-            (" | ", col_divider),
-            (c_text, c_col),
-            (" ] cycles", col_label),
+        segments: List[Tuple[str, Tuple[int, int, int], Optional[int]]] = [
+            ("CHANNEL FOCUS: [ ", col_label, None),
+            (f"B: {state.base_cycles:.2f}", b_col, 0),
+            (" | ", col_divider, None),
+            (f"R: {state.relief_cycles:.2f}", r_col, 1),
+            (" | ", col_divider, None),
+            (c_text, c_col, c_id),
+            (" ] cycles", col_label, None),
         ]
 
         rendered = [
-            self.font.render(text, True, color) for text, color in segments
+            (self.font.render(text, True, color), ch_id)
+            for text, color, ch_id in segments
         ]
-        box_w = sum(surf.get_width() for surf in rendered) + (pad * 2)
-        box_h = max(surf.get_height() for surf in rendered) + (pad * 2)
+        box_w = sum(surf.get_width() for surf, _ in rendered) + (pad * 2)
+        box_h = max(surf.get_height() for surf, _ in rendered) + (pad * 2)
 
         bg_surf = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
         bg_surf.fill(config.COLOR_HUD_CARD_2D)
@@ -298,7 +301,12 @@ class Renderer2D(BaseRenderer):
             config.PANEL_SELECTION_WIDTH,
         )
 
+        state.channel_hitboxes.clear()
         curr_x = x + pad
-        for surf in rendered:
+        for surf, ch_id in rendered:
             self.screen.blit(surf, (curr_x, y + pad))
+            if ch_id is not None:
+                state.channel_hitboxes[ch_id] = pygame.Rect(
+                    curr_x - 4, y, surf.get_width() + 8, box_h
+                )
             curr_x += surf.get_width()

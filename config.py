@@ -36,6 +36,7 @@ MIN_RELIEF_FACTOR: float = 0.05  # fraction
 
 # ------ Frequency Tuning Rates & Clamps ------
 CYCLE_ZOOM_RATE: float = 0.75  # rate
+MOUSE_ZOOM_SENSITIVITY: float = 0.005  # rate/px
 BASE_MIN_CYCLES: float = 1.0  # cycles
 BASE_MAX_CYCLES: float = 100.0  # cycles
 RELIEF_MIN_CYCLES: float = 0.5  # cycles

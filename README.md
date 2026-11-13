@@ -1,5 +1,4 @@
 ```
- ```
  ____           ____                        ____    ___                      __   
 /\  _`\        /\  _`\   __                /\  _`\ /\_ \                    /\ \  
 \ \ \L\ \__  __\ \,\L\_\/\_\    ___      __\ \ \L\ \//\ \      __    ___    \_\ \ 
@@ -29,20 +28,16 @@ Create and activate a virtual environment from the project root. Then install
 dependencies and launch the application.
 
 Windows PowerShell:
-bash
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-python main.py
-
+    python -m venv .venv
+    .\.venv\Scripts\Activate.ps1
+    python -m pip install -r requirements.txt
+    python main.py
 
 macOS or Linux:
-bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python main.py
-
+    python -m venv .venv
+    source .venv/bin/activate
+    python -m pip install -r requirements.txt
+    python main.py
 
 The studio boots immediately into the 1D Oscilloscope viewport. Use Escape
 or close the application window to shut down cleanly.
@@ -64,8 +59,9 @@ The software provides dual-viewport parity across two spatial dimensions:
     Mode 2: 2D Spatial Synthesizer (Planar Topographical Elevation Field)
 
 This allows creators to see how pure mathematical formulas, frequency
-adjustments, coordinate warping, discrete tile steps, and color palettes
-translate from single-line curves into rich continuous 2D landscapes.
+adjustments, per-layer spatial offsets, coordinate warping, discrete tile
+steps, and color palettes translate from single-line curves into rich
+continuous 2D landscapes.
 
 All mathematical computations run via high-performance vectorized NumPy
 arrays, with hardware-accelerated rendering handled through Pygame-ce.
@@ -86,14 +82,19 @@ Natural terrain is simulated by combining three distinct geological wave roles:
 
 All wave signals are normalized between 0.000 (sea level baseline) and 1.000
 (mountain peak ceiling). Configurable starting heights determine initial
-wave phase offsets at the screen edge or radial center.
+wave phase offsets at the origin.
+
+Per-Layer Spatial Positioning:
+Each wave role maintains its own independent (x, y) spatial offset, allowing
+you to pan all layers together or slide individual waves, bands, and circular
+centers relative to one another in real time.
 
 Mathematical Elevation Budgeting (Zero-Clipping Invariant):
 To prevent terrain from shearing off against an artificial flat ceiling,
 formulas divide available elevation into mathematical budgets (crust share
-and relief share). Because their maximum sum cannot exceed 1.000, peaks never
-clip flat, and inland valleys remain naturally elevated above sea level on
-high continental ground.
+and relief share, e.g. 0.40 crust + 0.60 relief). Because their maximum sum
+cannot exceed 1.000, peaks never clip flat, and inland valleys remain
+naturally elevated above sea level on high continental ground.
 
 
 [5.0 DUAL-VIEWPORT ARCHITECTURE]
@@ -106,9 +107,16 @@ Presents four vertically stacked real-time oscilloscope panels:
     - Panel 1: Base Detail wave D(x).
     - Panel 2: Relief Multiplier envelope M(x).
     - Panel 3: Continental Crust tectonic floor C(x).
-    - Panel 4: Composite Result from the active mathematical formula.
+    - Panel 4: Composite Result from the active formula ([ALL ACTIVE]).
 
-Panel 4 features dual-mode visualization:
+Smart Panel Selection:
+Click directly on Panel 1, 2, 3, or 4 with either mouse button (or cycle with
+UP/DOWN) to select focus. On 2-layer formulas where Crust is silenced, clicks
+on Panel 3 are safely ignored and UP/DOWN skips straight between Panels 1, 2,
+and 4. Selecting Panel 4 highlights it in blue with [ALL ACTIVE] and directs
+single-layer tuning and resets across all three wave channels together.
+
+Panel 4 Dual-Mode Visualization:
     - Standard Mode: Renders a solid hypsometric color fill under the curve
                      down to the baseline using the active color palette.
     - Net Mode (Key [N]): Replaces the fill with a crisp, multi-colored vector
@@ -116,17 +124,31 @@ Panel 4 features dual-mode visualization:
 
 Idle Frame Caching:
 Mode 1 renders its four panels, fills, and trace lines onto an offscreen
-cached surface and only rebuilds when wave frequencies, focus, formulas,
-stepping, or palettes change. While idle, redrawing the viewport takes a
-single surface copy.
+cached surface and only rebuilds when wave frequencies, offsets, focus,
+formulas, stepping, or palettes change. While idle, redrawing the viewport
+takes a single surface copy.
 
 
 MODE 2: 2D SPATIAL SYNTHESIZER (Key [2])
 -------------------------------------------------------------------------------
 Projects wave roles across a continuous 2D surface on a 16:9 canvas:
-    - Base Detail (B)     : Mapped to Vertical Stripes along X (dense ridges).
-    - Relief Multiplier (R): Mapped to Horizontal Bands along Y (valleys).
+    - Base Detail (B)      : Mapped to Vertical Stripes along X (dense ridges).
+    - Relief Multiplier (R): Mapped to Horizontal Bands along Y (or radial
+                             concentric pond/island in 2-Layer Radial mode).
     - Continental Crust (C): Mapped to Concentric Radial Rings (central dome).
+
+2D Positioning & Movable Circular Centers:
+Plain Left-Drag pans all wave layers together 1:1 with the cursor. Holding
+SHIFT + Left-Drag isolates the currently selected layer: Base slides vertical
+stripes left/right, Relief slides horizontal bands up/down (or moves the
+circular pond/island center in 2D on 2-layer Radial presets), and Crust moves
+the radial continental dome anywhere in 2D. Radial centers can even be dragged
+off-screen to sculpt sweeping coastlines and arcs without changing ring scale.
+
+Clickable Channel Card:
+Click directly on B, R, or C inside the blue-bordered CHANNEL FOCUS strip to
+switch active layers without nudging the canvas. Silenced Crust labels ignore
+clicks automatically.
 
 Perspective / Projection Geometry (Key [P]):
 Pressing [P] toggles between two spatial projection models at runtime:
@@ -185,8 +207,8 @@ in config.py:
 Centroid Grid Anchoring & Color-Before-Expand:
 Tile sampling evaluates elevation at the exact center (+0.5 stride) of each
 tile block rather than its top-left corner. This ensures radial islands,
-concentric rings, and diagonal ridges remain centered and symmetrical across
-all four quadrants without shifting the screen grid.
+concentric rings, and shifted waves align cleanly to the pixel grid without
+jittering as patterns move through tiles.
 
 To maximize speed, wave math and color Look-Up Table mapping happen directly
 on the tiny coarse grid (e.g., evaluating and coloring only 6,820 points at
@@ -201,9 +223,10 @@ Visual Representation Across Viewports:
              biome chunks (similar to a classic 16-bit overworld map).
 
 Interactive Smooth Scrubbing & Settle-Debounce (Mode 2):
-When Tile Stepping is OFF and you hold LEFT or RIGHT to zoom wavelengths in
-Mode 2, the engine temporarily shifts into a lighter scrubbing preview instead
-of recalculating all 1.74 million pixels every frame:
+When Tile Stepping is OFF and you tune frequencies or drag positions in Mode 2
+(via Right-Drag, Left-Drag, SHIFT+Drag, or LEFT/RIGHT keys), the engine
+temporarily shifts into a lighter scrubbing preview instead of recalculating
+all 1.74 million pixels every frame:
     - Endpoint-Aligned (N + 1) Grid: Evaluates a precomputed sub-sampled mesh
       (SCRUB_SUB_SAMPLE_FACTOR, default 4x smaller) whose outer edges align
       exactly with the full-resolution screen corners so terrain never shifts.
@@ -211,11 +234,12 @@ of recalculating all 1.74 million pixels every frame:
       colored first and stretched smoothly onto the screen using bilinear
       scaling. In Relief Net mode, the same coarse grid feeds a smart
       cell-culled contour pass (detailed in Section 8.0) so contour lines
-      stay razor-sharp while zooming.
-    - Automatic Settle Refinement: Once you release the zoom key and a short
-      grace delay elapses (SCRUB_SETTLE_DELAY), Mode 2 automatically rebuilds
-      once at full 1760x990 clarity. One-shot toggles (palettes, formulas,
-      perspectives, resets) bypass scrubbing and render crisply right away.
+      stay razor-sharp while moving.
+    - Instant Mouse Release & Keyboard Settle: Releasing a mouse drag settles
+      scrubbing immediately back to full 1760x990 clarity; keyboard scrubbing
+      settles automatically after a brief pause (SCRUB_SETTLE_DELAY). One-shot
+      toggles (palettes, formulas, perspectives, resets) render crisply right
+      away.
 
 
 [8.0 DIAGNOSTIC COLOR SUITE, INVERSION & RELIEF NET]
@@ -248,13 +272,13 @@ Triple Evaluation Mechanics:
       pass using reusable scratch memory. It clears the canvas to the dark
       blueprint color and paints only the ~3-5% active contour pixels straight
       into display memory, skipping empty background writes altogether.
-    - Interactive Scrubbing Net Mode (Coarse-Cell Culling): While holding
-      LEFT or RIGHT with Net ON (and Tile Stepping OFF), Mode 2 evaluates the
-      shared 4x coarse wave grid and checks the minimum and maximum height of
-      each cell's four corners. Cells sitting entirely between contour lines
+    - Interactive Scrubbing Net Mode (Coarse-Cell Culling): While dragging or
+      zooming with Net ON (and Tile Stepping OFF), Mode 2 evaluates the shared
+      4x coarse wave grid and checks the minimum and maximum height of each
+      cell's four corners. Cells sitting entirely between contour lines
       (typically 80-90% of the screen) are skipped immediately; only the
       remaining active cells are smoothly interpolated up to native 1760x990
-      pixel precision, keeping contour lines crisp and 1-pixel thin mid-zoom
+      pixel precision, keeping contour lines crisp and 1-pixel thin mid-motion
       with zero blur before snapping to full-resolution math on settle.
     - Discrete Tile Mode (Net + Tiles): Instead of scaling up thick blocks or
       scanning 1.74 million pixels, Mode 2 checks horizontal and vertical tile
@@ -263,32 +287,54 @@ Triple Evaluation Mechanics:
       surface slices.
 
 
-[9.0 CONTROLS & KEYBOARD SHORTCUTS]
+[9.0 CONTROLS & KEYBOARD / MOUSE SHORTCUTS]
 -------------------------------------------------------------------------------
-    1                   : Switch to Mode 1 (1D Oscilloscope Viewport).
-    2                   : Switch to Mode 2 (2D Spatial Synthesizer Viewport).
+Universal Rule: Unmodified inputs operate globally across ALL layers together;
+holding [SHIFT] acts as a "layer magnifier/selector" isolating only the active
+selected layer.
 
-    TAB                 : Cycle to next formula preset.
-    SHIFT + TAB         : Cycle to previous formula preset.
+    1 / 2               : Switch to Mode 1 (1D Oscilloscope) or Mode 2 (2D).
 
-    UP / DOWN           : Switch channel focus (Base -> Relief -> Crust).
-                          (Automatically skips Crust on 2-layer formulas).
+    TAB / SHIFT + TAB   : Cycle to next / previous formula preset.
 
-    HOLD RIGHT          : Continuously zoom in (increase frequency/cycles).
-    HOLD LEFT           : Continuously zoom out (decrease frequency/cycles).
+    UP / DOWN           : Switch channel focus (Base -> Relief -> Crust, plus
+                          Panel 4 [ALL ACTIVE] in Mode 1). Automatically skips
+                          silenced Crust on 2-layer formulas.
+
+    CLICK PANEL (MODE 1): Click any active Panel 1-4 (LMB or RMB) to focus it
+                          immediately; silenced Panel 3 clicks are ignored.
+    CLICK CARD (MODE 2) : Click B, R, or C inside the blue-bordered channel
+                          strip to select that layer without moving the view.
+
+    LEFT DRAG           : Pan all wave layers together 1:1 with the cursor.
+    SHIFT + LEFT DRAG   : Move ONLY the currently selected layer (or all when
+                          Panel 4 is selected in Mode 1).
+
+    RIGHT DRAG          : Proportionally zoom ALL wave channels together (drag
+                          right for higher frequency / smaller features; drag
+                          left for lower frequency / wider features).
+    SHIFT + RIGHT DRAG  : Zoom ONLY the currently selected layer.
+
+    HOLD RIGHT / LEFT   : Keyboard mirror of Right-Drag: zoom ALL channels
+                          together (Right = higher frequency; Left = lower
+                          frequency). In Mode 1 with Panel 4 selected, always
+                          zooms all layers.
+    SHIFT + RIGHT / LEFT: Zoom ONLY the currently selected layer.
 
     SPACE               : Step tile size coarser (or toggle on).
     SHIFT + SPACE       : Step tile size finer (or toggle off).
 
-    C                   : Cycle active color palette forward.
-    SHIFT + C           : Cycle active color palette backward.
+    C / SHIFT + C       : Cycle active color palette forward / backward.
 
     I                   : Toggle palette color inversion on/off.
     P                   : Toggle spatial perspective (Mode 2 only: Radial/Warped).
     N                   : Toggle Topographical Relief Net / 1D Fill mode.
 
-    R                   : Reset active focused channel cycles to default.
-    SHIFT + R           : Reset all channels to default configuration.
+    R                   : Reset ALL channels' frequencies and spatial offsets
+                          to default configuration.
+    SHIFT + R           : Reset ONLY the currently selected channel's frequency
+                          and offset (in Mode 1 with Panel 4 selected, resets
+                          all 3 channels).
 
     ESCAPE / CLOSE      : Clean application shutdown.
 
@@ -314,10 +360,11 @@ reference and unit guide. Key configuration groups include:
 
     DEFAULT_*_CYCLES          : Starting cycle counts across the screen.
     *_MIN / MAX_CYCLES        : Frequency tuning bounds preventing artifacts.
-    CYCLE_ZOOM_RATE           : Continuous exponential zoom multiplier rate.
+    CYCLE_ZOOM_RATE           : Continuous exponential keyboard zoom rate.
+    MOUSE_ZOOM_SENSITIVITY    : Exponential zoom sensitivity for Right-Drag.
 
-    SCRUB_SUB_SAMPLE_FACTOR   : Shared preview divider while zooming in Mode 2.
-    SCRUB_SETTLE_DELAY        : Settle wait time (seconds) before full-res snap.
+    SCRUB_SUB_SAMPLE_FACTOR   : Shared preview divider while scrubbing Mode 2.
+    SCRUB_SETTLE_DELAY        : Keyboard settle wait time before full-res snap.
 
     CRUST / RELIEF_BUDGET     : Mathematical elevation budget shares.
     MIN_RELIEF_FACTOR         : Minimum relief floor preserving low ripples.
@@ -338,13 +385,13 @@ pysineblend/
     ├── contour_net.py         # Single-pass isolines, cell culling & tile edges
     ├── formulas.py            # Master formula catalog, math, and 2D specs
     ├── heatmaps.py            # 1,024-slot LUT bakes and array inversion
-    ├── input_handler.py       # Event routing and held-key frequency zoom
-    ├── state.py               # Shared state machine, scrubbing, and sync
-    ├── wave_model.py          # Pure NumPy 1D, 2D, tile, and scrubbing meshes
+    ├── input_handler.py       # Smart click focus, mouse drags & SHIFT routing
+    ├── state.py               # Shared state machine, offsets, hitboxes & scrub
+    ├── wave_model.py          # Pure NumPy 1D/2D waves, dynamic centers & mesh
     └── renderers/             # Viewport Renderers
         ├── base_renderer.py   # Typography and dynamic HUD card drawer
-        ├── renderer_1d.py     # 4-panel oscilloscope with offscreen caching
-        └── renderer_2d.py     # Color-before-expand 2D baking & net routing
+        ├── renderer_1d.py     # 4-panel oscilloscope with Panel 4 focus & cache
+        └── renderer_2d.py     # Color-before-expand 2D baking, hitboxes & net
 
 
 [12.0 LICENSE]

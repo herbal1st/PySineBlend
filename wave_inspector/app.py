@@ -92,6 +92,9 @@ class WaveMathInspector:
                     crust_cycles=self.state.crust_cycles,
                     tile_stepping=self.state.tile_stepping_enabled,
                     tile_size=self.state.tile_size,
+                    base_offset_x=self.state.base_offset_x,
+                    relief_offset_x=self.state.relief_offset_x,
+                    crust_offset_x=self.state.crust_offset_x,
                 )
                 self.renderer_1d.update_surface(self.state, frame_1d)
                 self.state.needs_rebuild_1d = False
@@ -108,6 +111,12 @@ class WaveMathInspector:
                 relief_cycles=self.state.relief_cycles,
                 crust_cycles=self.state.crust_cycles,
                 is_warped=self.state.is_warped,
+                base_offset_x=self.state.base_offset_x,
+                base_offset_y=self.state.base_offset_y,
+                relief_offset_x=self.state.relief_offset_x,
+                relief_offset_y=self.state.relief_offset_y,
+                crust_offset_x=self.state.crust_offset_x,
+                crust_offset_y=self.state.crust_offset_y,
             )
             self.renderer_2d.update_surface(
                 heightfield=heightfield_2d,

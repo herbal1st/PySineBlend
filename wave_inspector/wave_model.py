@@ -149,28 +149,34 @@ def build_wave_frame_2d(
     crust_offset_y: float = 0.0,
 ) -> NDArray[np.float32]:
     """Evaluates compact 2D wave field for the supplied coordinate mesh."""
-    x_grid = mesh.x_norm - base_offset_x
-    y_grid = mesh.y_norm - relief_offset_y
+    x_grid = (mesh.x_norm - 0.5) - base_offset_x
     zeros = np.zeros_like(mesh.x_norm)
+    base_2d = zeros
+    relief_2d = zeros
+    crust_2d = zeros
 
     if preset.composite_index < 0:
-        base_2d = _evaluate_sine_grid(
-            x_grid, base_cycles, config.BASE_START
-        )
-        relief_2d = _evaluate_sine_grid(
-            y_grid, relief_cycles, config.RELIEF_START
-        )
-        c_rad = _compute_radial_grid(mesh, crust_offset_x, crust_offset_y)
-        crust_2d = _evaluate_sine_grid(
-            c_rad, crust_cycles, config.CRUST_START
-        )
-    elif not preset.uses_crust:
-        crust_2d = zeros
-        if is_warped:
+        if preset.uses_base:
+            base_2d = _evaluate_sine_grid(
+                x_grid, base_cycles, config.BASE_START
+            )
+        if preset.uses_relief:
+            y_grid = (mesh.y_norm - 0.5) - relief_offset_y
             relief_2d = _evaluate_sine_grid(
                 y_grid, relief_cycles, config.RELIEF_START
             )
-            warp = config.WARP_FACTOR * (relief_2d - 0.5)
+        if preset.uses_crust:
+            c_rad = _compute_radial_grid(mesh, crust_offset_x, crust_offset_y)
+            crust_2d = _evaluate_sine_grid(
+                c_rad, crust_cycles, config.CRUST_START
+            )
+    elif not preset.uses_relief:
+        if is_warped:
+            y_crust = (mesh.y_norm - 0.5) - crust_offset_y
+            crust_2d = _evaluate_sine_grid(
+                y_crust, crust_cycles, config.CRUST_START
+            )
+            warp = config.WARP_FACTOR * (crust_2d - 0.5)
             base_2d = _evaluate_sine_grid(
                 x_grid + warp, base_cycles, config.BASE_START
             )
@@ -178,17 +184,16 @@ def build_wave_frame_2d(
             base_2d = _evaluate_sine_grid(
                 x_grid, base_cycles, config.BASE_START
             )
-            r_rad = _compute_radial_grid(
-                mesh, relief_offset_x, relief_offset_y
-            )
-            relief_2d = _evaluate_sine_grid(
-                r_rad, relief_cycles, config.RELIEF_START
+            c_rad = _compute_radial_grid(mesh, crust_offset_x, crust_offset_y)
+            crust_2d = _evaluate_sine_grid(
+                c_rad, crust_cycles, config.CRUST_START
             )
     else:
         c_rad = _compute_radial_grid(mesh, crust_offset_x, crust_offset_y)
         crust_2d = _evaluate_sine_grid(
             c_rad, crust_cycles, config.CRUST_START
         )
+        y_grid = (mesh.y_norm - 0.5) - relief_offset_y
         relief_2d = _evaluate_sine_grid(
             y_grid, relief_cycles, config.RELIEF_START
         )

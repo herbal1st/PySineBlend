@@ -59,19 +59,33 @@ class Renderer1D(BaseRenderer):
             is_selected=state.selected_panel_index == 0,
         )
 
-        r_tag = " [ACTIVE]" if state.selected_panel_index == 1 else ""
-        r_title = (
-            f"PANEL 2: RELIEF MULTIPLIER M(x){r_tag} | "
-            f"CYCLES: {state.relief_cycles:.1f} | "
-            f"START: {config.RELIEF_START:.2f} | "
-            f"MIN_RELIEF: {config.MIN_RELIEF_FACTOR:.2f}"
-        )
+        if formula.uses_relief:
+            r_tag = " [ACTIVE]" if state.selected_panel_index == 1 else ""
+            r_title = (
+                f"PANEL 2: RELIEF MULTIPLIER M(x){r_tag} | "
+                f"CYCLES: {state.relief_cycles:.1f} | "
+                f"START: {config.RELIEF_START:.2f} | "
+                f"MIN_RELIEF: {config.MIN_RELIEF_FACTOR:.2f}"
+            )
+            r_data = frame.relief
+            r_silenced = False
+            r_selected = state.selected_panel_index == 1
+        else:
+            r_title = (
+                "PANEL 2: RELIEF MULTIPLIER M(x) | "
+                "[SILENCED / NOT USED IN THIS 2-LAYER FORMULA]"
+            )
+            r_data = np.zeros_like(frame.relief)
+            r_silenced = True
+            r_selected = False
+
         self._draw_panel(
             panel_index=1,
-            wave_data=frame.relief,
+            wave_data=r_data,
             title=r_title,
             line_width=config.COMPONENT_LINE_WIDTH,
-            is_selected=state.selected_panel_index == 1,
+            is_silenced=r_silenced,
+            is_selected=r_selected,
         )
 
         if formula.uses_crust:
@@ -105,7 +119,8 @@ class Renderer1D(BaseRenderer):
 
         min_v = float(np.min(frame.composite))
         max_v = float(np.max(frame.composite))
-        layer_tag = "3-LAYER" if formula.uses_crust else "2-LAYER"
+        is_3layer = formula.uses_relief and formula.uses_crust
+        layer_tag = "3-LAYER" if is_3layer else "2-LAYER"
         p4_selected = state.selected_panel_index == 3
         p4_tag = " [ALL ACTIVE]" if p4_selected else ""
         p4_title = (

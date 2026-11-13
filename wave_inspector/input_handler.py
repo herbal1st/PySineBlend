@@ -1,7 +1,7 @@
 """Event processing and continuous input handling for the inspector."""
 
 import math
-from typing import Tuple
+from typing import List, Tuple
 import pygame
 import config
 from wave_inspector.state import InspectorState
@@ -106,7 +106,7 @@ class InputHandler:
             panel_idx = min(
                 config.PANEL_COUNT - 1, max(0, pos[1] // panel_h)
             )
-            if panel_idx == 2 and not state.formula_1d.uses_crust:
+            if panel_idx not in self._get_valid_channels(state):
                 return
             if state.selected_panel_index != panel_idx:
                 state.selected_panel_index = panel_idx
@@ -147,6 +147,22 @@ class InputHandler:
             self._scale_channels(state, factor, single_layer=shift_held)
             state.mark_scrubbing()
 
+    def _handle_held_keys(self, state: InspectorState, dt: float) -> None:
+        """Scales channel frequencies continuously via held arrow keys."""
+        keys = pygame.key.get_pressed()
+        move_left = keys[pygame.K_LEFT]
+        move_right = keys[pygame.K_RIGHT]
+
+        if move_left == move_right or dt <= 0.0:
+            return
+
+        step_scale = 1.0 + (config.CYCLE_ZOOM_RATE * dt)
+        factor = step_scale if move_right else (1.0 / step_scale)
+        shift_held = bool(pygame.key.get_mods() & pygame.KMOD_SHIFT)
+
+        self._scale_channels(state, factor, single_layer=shift_held)
+        state.mark_scrubbing()
+
     def _shift_wave_offsets(
         self,
         state: InspectorState,
@@ -165,21 +181,61 @@ class InputHandler:
             state.crust_offset_x += ndx
             state.crust_offset_y += ndy
 
-    def _handle_held_keys(self, state: InspectorState, dt: float) -> None:
-        """Scales channel frequencies continuously via held arrow keys."""
-        keys = pygame.key.get_pressed()
-        move_left = keys[pygame.K_LEFT]
-        move_right = keys[pygame.K_RIGHT]
+    def _get_valid_channels(
+        self,
+        state: InspectorState,
+    ) -> Tuple[int, ...]:
+        """Returns valid selectable channel indices for active mode."""
+        if state.active_mode == 2:
+            preset = state.preset_2d
+            channels: List[int] = []
+            if preset.uses_base:
+                channels.append(0)
+            if preset.uses_relief:
+                channels.append(1)
+            if preset.uses_crust:
+                channels.append(2)
+            return tuple(channels) if channels else (0,)
 
-        if move_left == move_right or dt <= 0.0:
+        formula = state.formula_1d
+        channels = [0]
+        if formula.uses_relief:
+            channels.append(1)
+        if formula.uses_crust:
+            channels.append(2)
+        channels.append(3)
+        return tuple(channels)
+
+    def _move_channel_focus(
+        self,
+        state: InspectorState,
+        direction: int,
+    ) -> None:
+        """Navigates focus across valid input channels for active mode."""
+        channels = self._get_valid_channels(state)
+        if state.selected_panel_index in channels:
+            cur_pos = channels.index(state.selected_panel_index)
+            next_pos = (cur_pos + direction) % len(channels)
+            state.selected_panel_index = channels[next_pos]
+        else:
+            state.selected_panel_index = channels[0]
+
+        if state.active_mode == 1:
+            state.needs_rebuild_1d = True
+
+    def _clamp_focus_for_active_mode(self, state: InspectorState) -> None:
+        """Clamps channel focus to valid channels for active mode."""
+        channels = self._get_valid_channels(state)
+        if state.selected_panel_index in channels:
             return
+        state.selected_panel_index = channels[0]
+        if state.active_mode == 1:
+            state.needs_rebuild_1d = True
 
-        step_scale = 1.0 + (config.CYCLE_ZOOM_RATE * dt)
-        factor = step_scale if move_right else (1.0 / step_scale)
-        shift_held = bool(pygame.key.get_mods() & pygame.KMOD_SHIFT)
-
-        self._scale_channels(state, factor, single_layer=shift_held)
-        state.mark_scrubbing()
+    def _reset_tuning(self, state: InspectorState, mods: int) -> None:
+        """Resets all channels, or only focused channel when SHIFT held."""
+        reset_all = not bool(mods & pygame.KMOD_SHIFT)
+        state.reset_wave_channels(reset_all=reset_all)
 
     def _scale_channels(
         self,
@@ -191,70 +247,49 @@ class InputHandler:
         scale_all = (not single_layer) or (
             state.active_mode == 1 and state.selected_panel_index == 3
         )
+        anchor_2d = state.active_mode == 2
+
         if scale_all or state.selected_panel_index == 0:
-            state.base_cycles = self._clamp(
-                state.base_cycles * factor,
+            old_base = state.base_cycles
+            new_base = self._clamp(
+                old_base * factor,
                 config.BASE_MIN_CYCLES,
                 config.BASE_MAX_CYCLES,
             )
+            if new_base != old_base:
+                state.base_cycles = new_base
+                if anchor_2d:
+                    state.base_offset_x *= old_base / new_base
+
         if scale_all or state.selected_panel_index == 1:
-            state.relief_cycles = self._clamp(
-                state.relief_cycles * factor,
+            old_relief = state.relief_cycles
+            new_relief = self._clamp(
+                old_relief * factor,
                 config.RELIEF_MIN_CYCLES,
                 config.RELIEF_MAX_CYCLES,
             )
+            if new_relief != old_relief:
+                state.relief_cycles = new_relief
+                if anchor_2d:
+                    state.relief_offset_y *= old_relief / new_relief
+
         if scale_all or state.selected_panel_index == 2:
-            state.crust_cycles = self._clamp(
-                state.crust_cycles * factor,
+            old_crust = state.crust_cycles
+            new_crust = self._clamp(
+                old_crust * factor,
                 config.CRUST_MIN_CYCLES,
                 config.CRUST_MAX_CYCLES,
             )
-
-    def _move_channel_focus(
-        self,
-        state: InspectorState,
-        direction: int,
-    ) -> None:
-        """Navigates focus across valid input channels for active mode."""
-        formula = (
-            state.formula_1d if state.active_mode == 1 else state.preset_2d
-        )
-        if state.active_mode == 1:
-            channels = (0, 1, 2, 3) if formula.uses_crust else (0, 1, 3)
-            if state.selected_panel_index in channels:
-                cur_pos = channels.index(state.selected_panel_index)
-                next_pos = (cur_pos + direction) % len(channels)
-                state.selected_panel_index = channels[next_pos]
-            else:
-                state.selected_panel_index = 0
-            state.needs_rebuild_1d = True
-            return
-
-        channel_count = 3 if formula.uses_crust else 2
-        state.selected_panel_index = (
-            state.selected_panel_index + direction
-        ) % channel_count
-
-    def _clamp_focus_for_active_mode(self, state: InspectorState) -> None:
-        """Clamps channel focus to valid channels for active mode."""
-        formula = (
-            state.formula_1d if state.active_mode == 1 else state.preset_2d
-        )
-        if state.active_mode == 1:
-            if not formula.uses_crust and state.selected_panel_index == 2:
-                state.selected_panel_index = 1
-                state.needs_rebuild_1d = True
-            return
-
-        if state.selected_panel_index >= 3:
-            state.selected_panel_index = 0
-        elif not formula.uses_crust and state.selected_panel_index >= 2:
-            state.selected_panel_index = 1
-
-    def _reset_tuning(self, state: InspectorState, mods: int) -> None:
-        """Resets all channels, or only focused channel when SHIFT held."""
-        reset_all = not bool(mods & pygame.KMOD_SHIFT)
-        state.reset_wave_channels(reset_all=reset_all)
+            if new_crust != old_crust:
+                state.crust_cycles = new_crust
+                preset = state.preset_2d
+                is_warped_2layer = (
+                    preset.composite_index >= 0
+                    and not preset.uses_relief
+                    and state.is_warped
+                )
+                if anchor_2d and is_warped_2layer:
+                    state.crust_offset_y *= old_crust / new_crust
 
     @staticmethod
     def _clamp(value: float, min_limit: float, max_limit: float) -> float:

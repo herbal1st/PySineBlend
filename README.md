@@ -111,8 +111,8 @@ Presents four vertically stacked real-time oscilloscope panels:
 
 Smart Panel Selection:
 Click directly on Panel 1, 2, 3, or 4 with either mouse button (or cycle with
-UP/DOWN) to select focus. On 2-layer formulas where Crust is silenced, clicks
-on Panel 3 are safely ignored and UP/DOWN skips straight between Panels 1, 2,
+UP/DOWN) to select focus. On 2-layer formulas where Relief is silenced, clicks
+on Panel 2 are safely ignored and UP/DOWN skips straight between Panels 1, 3,
 and 4. Selecting Panel 4 highlights it in blue with [ALL ACTIVE] and directs
 single-layer tuning and resets across all three wave channels together.
 
@@ -133,32 +133,42 @@ MODE 2: 2D SPATIAL SYNTHESIZER (Key [2])
 -------------------------------------------------------------------------------
 Projects wave roles across a continuous 2D surface on a 16:9 canvas:
     - Base Detail (B)      : Mapped to Vertical Stripes along X (dense ridges).
-    - Relief Multiplier (R): Mapped to Horizontal Bands along Y (or radial
-                             concentric pond/island in 2-Layer Radial mode).
-    - Continental Crust (C): Mapped to Concentric Radial Rings (central dome).
+    - Relief Multiplier (R): Mapped to Horizontal Bands along Y (silenced on
+                             2-layer formulas).
+    - Continental Crust (C): Mapped to Concentric Radial Rings (central dome
+                             or pond), or Horizontal Bands along Y when
+                             Warped ([P]) is active on a 2-layer formula.
 
-2D Positioning & Movable Circular Centers:
+2D Positioning, Consistent Circular Ponds & Zoom Anchoring:
 Plain Left-Drag pans all wave layers together 1:1 with the cursor. Holding
-SHIFT + Left-Drag isolates the currently selected layer: Base slides vertical
-stripes left/right, Relief slides horizontal bands up/down (or moves the
-circular pond/island center in 2D on 2-layer Radial presets), and Crust moves
-the radial continental dome anywhere in 2D. Radial centers can even be dragged
-off-screen to sculpt sweeping coastlines and arcs without changing ring scale.
+SHIFT + Left-Drag moves only the selected layer: Base slides vertical
+stripes left/right, Relief slides horizontal bands up/down, and Crust moves
+the circular dome/pond center anywhere in 2D (even off-screen to sculpt
+sweeping coastlines). Because Crust (C) owns the circular dome on both
+2-layer and 3-layer formulas, dragging the pond off-center and switching
+formulas with TAB keeps the pond in the exact same spot with no jump.
+
+Zooming also stays visually predictable: linear waves (Base stripes, Relief
+bands, and 2-layer Warped Crust bands) zoom around the center of the screen
+so patterns do not drift toward a corner, while off-center circular Crust
+domes stay anchored on their own circle centers so ripples grow and shrink
+right around the pond you placed.
 
 Clickable Channel Card:
 Click directly on B, R, or C inside the blue-bordered CHANNEL FOCUS strip to
-switch active layers without nudging the canvas. Silenced Crust labels ignore
+switch active layers without nudging the canvas. Inactive channels (such as
+R: Silenced on 2-layer formulas or unused channels on Solo presets) ignore
 clicks automatically.
 
 Perspective / Projection Geometry (Key [P]):
 Pressing [P] toggles between two spatial projection models at runtime:
-    - RADIAL : 2-layer formulas map Relief radially to form a circular island.
-               3-layer formulas map orthogonal Base and Relief over a radial
-               continental crust dome.
-    - WARPED : The Relief layer organically shears and bends the Base
-               detail coordinates (X_warp = X + offset), turning rigid grids
-               into serpentine, folded mountain belts and geological fault
-               lines across both 2-layer and 3-layer topographies.
+    - RADIAL : 2-layer formulas pair vertical Base ridges with a circular
+               Crust island or pond. 3-layer formulas add horizontal Relief
+               bands over that same circular Crust dome.
+    - WARPED : The secondary wave layer (Relief on 3-layer formulas, or Crust
+               switched to horizontal bands on 2-layer formulas) bends and
+               shears Base coordinates (X_warp = X + offset), turning rigid
+               stripes into serpentine mountain belts and fault lines.
 
 
 [6.0 FORMULA CATALOG & PRESETS]
@@ -179,12 +189,12 @@ Three-Layer Formulas:
     - Tectonic Subduction Belt   : Squared crust basin with ridge clamping.
     - Stepped Mesa Terraces      : Multi-tier terrace quantization with crust.
 
-Two-Layer Formulas (Continental Crust Silenced):
-    - Factored Virtual Crust     : Macro envelope drives floor and peaks.
-    - Tibetan High Plateau       : High plateau floor with sine-wave valleys.
-    - Razor Ridge / Granite Peaks: Squared base ridges sharpened by relief.
-    - Inverted Canyonlands       : Inverted relief carving steep ravines.
-    - Soft Natural Saturation    : Hyperbolic tangent organic compression.
+Two-Layer Formulas (Relief Multiplier Silenced):
+    - Factored Virtual Crust     : Crust drives both ground floor and peaks.
+    - Tibetan High Plateau       : High crust plateau carved with sine valleys.
+    - Razor Ridge / Granite Peaks: Squared base ridges sharpened by crust.
+    - Inverted Canyonlands       : Inverted crust carving steep ravines.
+    - Soft Natural Saturation    : Smooth hyperbolic tangent compression.
 
 
 MODE 2 CATALOG (15 Total Presets):
@@ -299,10 +309,11 @@ selected layer.
 
     UP / DOWN           : Switch channel focus (Base -> Relief -> Crust, plus
                           Panel 4 [ALL ACTIVE] in Mode 1). Automatically skips
-                          silenced Crust on 2-layer formulas.
+                          silenced layers (Relief on 2-layer formulas and
+                          inactive channels on 2D Solo presets).
 
     CLICK PANEL (MODE 1): Click any active Panel 1-4 (LMB or RMB) to focus it
-                          immediately; silenced Panel 3 clicks are ignored.
+                          immediately; silenced Panel 2 clicks are ignored.
     CLICK CARD (MODE 2) : Click B, R, or C inside the blue-bordered channel
                           strip to select that layer without moving the view.
 
@@ -312,7 +323,9 @@ selected layer.
 
     RIGHT DRAG          : Proportionally zoom ALL wave channels together (drag
                           right for higher frequency / smaller features; drag
-                          left for lower frequency / wider features).
+                          left for lower frequency / wider features). Linear
+                          waves zoom from the screen center; radial domes
+                          scale ripples around their own center.
     SHIFT + RIGHT DRAG  : Zoom ONLY the currently selected layer.
 
     HOLD RIGHT / LEFT   : Keyboard mirror of Right-Drag: zoom ALL channels

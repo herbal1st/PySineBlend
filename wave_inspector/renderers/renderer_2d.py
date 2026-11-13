@@ -191,7 +191,7 @@ class Renderer2D(BaseRenderer):
         if preset.composite_index < 0:
             type_tag = "SOLO"
             persp_tag = "N/A (SOLO)"
-        elif preset.uses_crust:
+        elif preset.uses_relief and preset.uses_crust:
             type_tag = "3-LAYER"
             persp_tag = "WARPED" if state.is_warped else "RADIAL"
         else:
@@ -241,7 +241,6 @@ class Renderer2D(BaseRenderer):
             x=10,
             y=10 + card1_h + 6,
             state=state,
-            uses_crust=preset.uses_crust,
         )
 
     def _draw_channel_strip(
@@ -249,7 +248,6 @@ class Renderer2D(BaseRenderer):
         x: int,
         y: int,
         state: InspectorState,
-        uses_crust: bool,
     ) -> None:
         """Draws channel strip and records clickable layer hitboxes."""
         col_active = (85, 155, 255)
@@ -259,10 +257,31 @@ class Renderer2D(BaseRenderer):
         col_silenced = (90, 95, 105)
 
         pad = 8
-        b_col = col_active if state.selected_panel_index == 0 else col_muted
-        r_col = col_active if state.selected_panel_index == 1 else col_muted
+        preset = state.preset_2d
 
-        if uses_crust:
+        if preset.uses_base:
+            b_col = (
+                col_active if state.selected_panel_index == 0 else col_muted
+            )
+            b_text = f"B: {state.base_cycles:.2f}"
+            b_id: Optional[int] = 0
+        else:
+            b_col = col_silenced
+            b_text = "B: Silenced"
+            b_id = None
+
+        if preset.uses_relief:
+            r_col = (
+                col_active if state.selected_panel_index == 1 else col_muted
+            )
+            r_text = f"R: {state.relief_cycles:.2f}"
+            r_id: Optional[int] = 1
+        else:
+            r_col = col_silenced
+            r_text = "R: Silenced"
+            r_id = None
+
+        if preset.uses_crust:
             c_col = (
                 col_active if state.selected_panel_index == 2 else col_muted
             )
@@ -275,9 +294,9 @@ class Renderer2D(BaseRenderer):
 
         segments: List[Tuple[str, Tuple[int, int, int], Optional[int]]] = [
             ("CHANNEL FOCUS: [ ", col_label, None),
-            (f"B: {state.base_cycles:.2f}", b_col, 0),
+            (b_text, b_col, b_id),
             (" | ", col_divider, None),
-            (f"R: {state.relief_cycles:.2f}", r_col, 1),
+            (r_text, r_col, r_id),
             (" | ", col_divider, None),
             (c_text, c_col, c_id),
             (" ] cycles", col_label, None),

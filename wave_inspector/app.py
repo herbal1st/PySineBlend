@@ -49,17 +49,6 @@ class WaveMathInspector:
             config.SCREEN_HEIGHT,
             config.SCRUB_SUB_SAMPLE_FACTOR,
         )
-        if (
-            config.SCRUB_NET_SUB_SAMPLE_FACTOR
-            == config.SCRUB_SUB_SAMPLE_FACTOR
-        ):
-            self.scrub_net_mesh_2d: CoordinateMesh2D = self.scrub_mesh_2d
-        else:
-            self.scrub_net_mesh_2d = build_scrub_mesh_2d(
-                config.SCREEN_WIDTH,
-                config.SCREEN_HEIGHT,
-                config.SCRUB_NET_SUB_SAMPLE_FACTOR,
-            )
 
         self.coarse_meshes: Dict[int, CoordinateMesh2D] = {
             sz: build_coarse_mesh_2d(
@@ -137,8 +126,6 @@ class WaveMathInspector:
                 self.state.tile_size, self.continuous_mesh
             )
         if self.state.is_scrubbing:
-            if self.state.net_enabled:
-                return self.scrub_net_mesh_2d
             return self.scrub_mesh_2d
         return self.continuous_mesh
 

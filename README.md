@@ -1,4 +1,5 @@
 ```
+ ```
  ____           ____                        ____    ___                      __   
 /\  _`\        /\  _`\   __                /\  _`\ /\_ \                    /\ \  
 \ \ \L\ \__  __\ \,\L\_\/\_\    ___      __\ \ \L\ \//\ \      __    ___    \_\ \ 
@@ -206,9 +207,11 @@ of recalculating all 1.74 million pixels every frame:
     - Endpoint-Aligned (N + 1) Grid: Evaluates a precomputed sub-sampled mesh
       (SCRUB_SUB_SAMPLE_FACTOR, default 4x smaller) whose outer edges align
       exactly with the full-resolution screen corners so terrain never shifts.
-    - Smooth Upscaling: Colors the compact preview grid first and stretches
-      it smoothly onto the screen using bilinear scaling, keeping visual style
-      consistent without switching into square tiles.
+    - Smooth Upscaling: In standard color mode, the compact preview grid is
+      colored first and stretched smoothly onto the screen using bilinear
+      scaling. In Relief Net mode, the same coarse grid feeds a smart
+      cell-culled contour pass (detailed in Section 8.0) so contour lines
+      stay razor-sharp while zooming.
     - Automatic Settle Refinement: Once you release the zoom key and a short
       grace delay elapses (SCRUB_SETTLE_DELAY), Mode 2 automatically rebuilds
       once at full 1760x990 clarity. One-shot toggles (palettes, formulas,
@@ -239,14 +242,20 @@ Pressing [N] turns the visualization into a topographical contour map:
              contour map, tracing elevation slices across the field.
 
 Triple Evaluation Mechanics:
-    - Continuous Mode (Settled): Evaluates contour lines using a narrow height
-      tolerance bandwidth, creating thin, smooth sub-pixel curves.
-    - Interactive Scrubbing Net Mode: While holding LEFT or RIGHT with Net ON
-      (and Tile Stepping OFF), Mode 2 evaluates a dedicated (N + 1) grid
-      (SCRUB_NET_SUB_SAMPLE_FACTOR) using one-sided forward neighbor checks
-      (right and down). Testing only leading crossings keeps preview lines
-      unbroken, thin, and free of flat-valley blobs or screen-edge wrap-around
-      before snapping back to smooth tolerance curves on settle.
+    - Continuous Mode (Settled — Single-Pass Direct Paint): Instead of testing
+      every elevation band in a separate loop, the engine measures how close
+      each pixel is to its nearest contour interval in one vectorized math
+      pass using reusable scratch memory. It clears the canvas to the dark
+      blueprint color and paints only the ~3-5% active contour pixels straight
+      into display memory, skipping empty background writes altogether.
+    - Interactive Scrubbing Net Mode (Coarse-Cell Culling): While holding
+      LEFT or RIGHT with Net ON (and Tile Stepping OFF), Mode 2 evaluates the
+      shared 4x coarse wave grid and checks the minimum and maximum height of
+      each cell's four corners. Cells sitting entirely between contour lines
+      (typically 80-90% of the screen) are skipped immediately; only the
+      remaining active cells are smoothly interpolated up to native 1760x990
+      pixel precision, keeping contour lines crisp and 1-pixel thin mid-zoom
+      with zero blur before snapping to full-resolution math on settle.
     - Discrete Tile Mode (Net + Tiles): Instead of scaling up thick blocks or
       scanning 1.74 million pixels, Mode 2 checks horizontal and vertical tile
       boundaries directly on the compact tile grid and stamps strictly
@@ -307,8 +316,7 @@ reference and unit guide. Key configuration groups include:
     *_MIN / MAX_CYCLES        : Frequency tuning bounds preventing artifacts.
     CYCLE_ZOOM_RATE           : Continuous exponential zoom multiplier rate.
 
-    SCRUB_SUB_SAMPLE_FACTOR   : Smooth preview downscaling divider while zooming.
-    SCRUB_NET_SUB_SAMPLE_FACTOR: Dedicated preview divider for Net mode zooming.
+    SCRUB_SUB_SAMPLE_FACTOR   : Shared preview divider while zooming in Mode 2.
     SCRUB_SETTLE_DELAY        : Settle wait time (seconds) before full-res snap.
 
     CRUST / RELIEF_BUDGET     : Mathematical elevation budget shares.
@@ -327,6 +335,7 @@ pysineblend/
 │
 └── wave_inspector/            # Pure Wave Inspector Package
     ├── app.py                 # Application lifecycle, timers, and mesh cache
+    ├── contour_net.py         # Single-pass isolines, cell culling & tile edges
     ├── formulas.py            # Master formula catalog, math, and 2D specs
     ├── heatmaps.py            # 1,024-slot LUT bakes and array inversion
     ├── input_handler.py       # Event routing and held-key frequency zoom
@@ -335,7 +344,7 @@ pysineblend/
     └── renderers/             # Viewport Renderers
         ├── base_renderer.py   # Typography and dynamic HUD card drawer
         ├── renderer_1d.py     # 4-panel oscilloscope with offscreen caching
-        └── renderer_2d.py     # Color-before-expand 2D baking & contour nets
+        └── renderer_2d.py     # Color-before-expand 2D baking & net routing
 
 
 [12.0 LICENSE]

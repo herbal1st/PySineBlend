@@ -180,14 +180,6 @@ SCRUB_SUB_SAMPLE_FACTOR       : Temporary resolution divider used in Mode 2
                                 clarity once you release the key.
                                 Metric: Integer divider (int).
 
-SCRUB_NET_SUB_SAMPLE_FACTOR   : Dedicated resolution divider used while zooming
-                                in Mode 2 with Relief Net ([N]) enabled. Using
-                                a slightly finer divider (e.g. 3 or 2) keeps
-                                temporary contour lines thinner and cleaner,
-                                while higher values (e.g. 4) boost framerate on
-                                slower hardware.
-                                Metric: Integer divider (int).
-
 SCRUB_SETTLE_DELAY            : Short wait time after you release a zoom key
                                 before Mode 2 automatically renders the final
                                 full-resolution 1760x990 frame. Prevents wasted

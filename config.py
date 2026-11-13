@@ -20,18 +20,18 @@ DEFAULT_NET_BANDWIDTH: float = 0.005  # fraction
 COLOR_NET_BACKGROUND: tuple[int, int, int] = (10, 12, 18)  # rgb
 
 # ------ Wave Frequency Defaults ------
-DEFAULT_BASE_CYCLES: float = 8.0  # cycles
-DEFAULT_RELIEF_CYCLES: float = 3.0  # cycles
-DEFAULT_CRUST_CYCLES: float = 0.5  # cycles
+DEFAULT_BASE_CYCLES: float = 6.0  # cycles
+DEFAULT_RELIEF_CYCLES: float = 5.0  # cycles
+DEFAULT_CRUST_CYCLES: float = 1.5  # cycles
 
 # ------ Starting Elevation Phase Offsets ------
-BASE_START: float = 0.50  # height
+BASE_START: float = 1.00  # height
 RELIEF_START: float = 1.00  # height
-CRUST_START: float = 0.00  # height
+CRUST_START: float = 1.00  # height
 
 # ------ Mathematical Elevation Budgets ------
-CRUST_BUDGET: float = 0.35  # fraction
-RELIEF_BUDGET: float = 0.65  # fraction
+CRUST_BUDGET: float = 0.4  # fraction
+RELIEF_BUDGET: float = 0.6  # fraction
 MIN_RELIEF_FACTOR: float = 0.05  # fraction
 
 # ------ Frequency Tuning Rates & Clamps ------
@@ -45,7 +45,6 @@ CRUST_MAX_CYCLES: float = 20.0  # cycles
 
 # ------ Interactive Scrubbing Throttling ------
 SCRUB_SUB_SAMPLE_FACTOR: int = 4  # divider
-SCRUB_NET_SUB_SAMPLE_FACTOR: int = 3  # divider
 SCRUB_SETTLE_DELAY: float = 0.12  # seconds
 
 # ------ Interface Colors & Metrics ------

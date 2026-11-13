@@ -1,24 +1,20 @@
 """2D spatial synthesizer renderer generating surfaces and relief nets."""
 
-from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 import numpy as np
 from numpy.typing import NDArray
 import pygame
 import config
+from wave_inspector.contour_net import (
+    ContourScratch,
+    bake_tile_contour_edges,
+    create_contour_scratch,
+    draw_contour_net_to_surface,
+    draw_culled_contour_net_to_surface,
+)
 from wave_inspector.formulas import PRESETS_2D
 from wave_inspector.renderers.base_renderer import BaseRenderer
 from wave_inspector.state import InspectorState
-
-
-@dataclass(frozen=True, slots=True)
-class _TileContourEdges:
-    """Directional contour colors and active masks for coarse tile seams."""
-
-    v_colors: NDArray[np.uint8]
-    v_active: NDArray[np.bool_]
-    h_colors: NDArray[np.uint8]
-    h_active: NDArray[np.bool_]
 
 
 class Renderer2D(BaseRenderer):
@@ -31,6 +27,7 @@ class Renderer2D(BaseRenderer):
             (config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
         )
         self._scratch_surfaces: Dict[Tuple[int, int], pygame.Surface] = {}
+        self._contour_scratch: Optional[ContourScratch] = None
         grey = np.linspace(
             0.0, 255.0, 1024, dtype=np.float32
         ).astype(np.uint8)
@@ -47,12 +44,16 @@ class Renderer2D(BaseRenderer):
         """Colors compact or native heightfields and scales onto target."""
         color_source = lut if lut is not None else self._fallback_lut
 
-        if state.net_enabled and state.tile_stepping_enabled:
-            self._draw_tile_contour_edges(heightfield, color_source, state)
+        if state.net_enabled:
+            if state.tile_stepping_enabled:
+                self._draw_tile_contour_edges(heightfield, color_source, state)
+            else:
+                self._render_net_surface(heightfield, color_source, state)
             return
 
         h_dim, w_dim = heightfield.shape
-        rgb_buffer = self._bake_rgb_buffer(heightfield, color_source, state)
+        indices = np.clip(heightfield * 1023.0, 0, 1023).astype(np.int32)
+        rgb_buffer = color_source[indices]
         transposed = np.transpose(rgb_buffer, (1, 0, 2))
 
         if w_dim == self.width and h_dim == self.height:
@@ -81,6 +82,14 @@ class Renderer2D(BaseRenderer):
         self._draw_hud(state, fps)
         self.draw_controls_card(is_dark_theme=True)
 
+    def _get_contour_scratch(self) -> ContourScratch:
+        """Lazily allocates reusable (W, H) buffers for contour rendering."""
+        if self._contour_scratch is None:
+            self._contour_scratch = create_contour_scratch(
+                self.width, self.height
+            )
+        return self._contour_scratch
+
     def _get_scratch_surface(
         self,
         width: int,
@@ -94,73 +103,36 @@ class Renderer2D(BaseRenderer):
             self._scratch_surfaces[key] = surface
         return surface
 
-    def _bake_rgb_buffer(
+    def _render_net_surface(
         self,
         heightfield: NDArray[np.float32],
         lut: NDArray[np.uint8],
         state: InspectorState,
-    ) -> NDArray[np.uint8]:
-        """Maps float32 heights to uint8 RGB via LUT or contour net."""
-        if state.net_enabled:
-            return self._bake_contour_net(
-                heightfield=heightfield,
+    ) -> None:
+        """Draws crisp isolines directly using culled or native paths."""
+        h_dim, w_dim = heightfield.shape
+        if w_dim != self.width or h_dim != self.height:
+            draw_culled_contour_net_to_surface(
+                surface=self.rendered_surface,
+                coarse_wh=np.ascontiguousarray(heightfield.T),
                 lut=lut,
                 intervals=state.net_intervals,
                 bandwidth=state.net_bandwidth,
-                tile_stepping=state.is_scrubbing,
+                bg_color=config.COLOR_NET_BACKGROUND,
             )
+            return
 
-        indices = np.clip(heightfield * 1023.0, 0, 1023).astype(np.int32)
-        return np.ascontiguousarray(lut[indices])
-
-    def _bake_contour_net(
-        self,
-        heightfield: NDArray[np.float32],
-        lut: NDArray[np.uint8],
-        intervals: float,
-        bandwidth: float,
-        tile_stepping: bool,
-    ) -> NDArray[np.uint8]:
-        """Synthesizes contour lines via one-sided crossings or bands."""
-        h_dim, w_dim = heightfield.shape
-        bg_rgb = np.array(config.COLOR_NET_BACKGROUND, dtype=np.uint8)
-        buffer = np.full((h_dim, w_dim, 3), bg_rgb, dtype=np.uint8)
-
-        count = max(1, int(round(intervals))) + 1
-        levels = np.linspace(0.0, 1.0, count, dtype=np.float32)
-
-        if tile_stepping:
-            h_curr_x = heightfield[:, :-1]
-            h_next_x = heightfield[:, 1:]
-            h_curr_y = heightfield[:-1, :]
-            h_next_y = heightfield[1:, :]
-
-            for lvl in levels:
-                lvl_idx = int(np.clip(lvl * 1023.0, 0, 1023))
-                lvl_color = lut[lvl_idx]
-                cross_mask = np.zeros((h_dim, w_dim), dtype=bool)
-
-                if lvl >= 0.999:
-                    cross_x = (h_curr_x < lvl) != (h_next_x < lvl)
-                    cross_y = (h_curr_y < lvl) != (h_next_y < lvl)
-                else:
-                    cross_x = (h_curr_x <= lvl) != (h_next_x <= lvl)
-                    cross_y = (h_curr_y <= lvl) != (h_next_y <= lvl)
-
-                cross_mask[:, :-1] |= cross_x
-                cross_mask[:-1, :] |= cross_y
-                buffer[cross_mask] = lvl_color
-        else:
-            contour_mask = np.zeros((h_dim, w_dim), dtype=bool)
-            for lvl in levels:
-                diff = np.abs(heightfield - lvl)
-                contour_mask |= diff <= bandwidth
-
-            indices = np.clip(heightfield * 1023.0, 0, 1023).astype(np.int32)
-            colored_pixels = lut[indices]
-            buffer[contour_mask] = colored_pixels[contour_mask]
-
-        return np.ascontiguousarray(buffer)
+        scratch = self._get_contour_scratch()
+        np.copyto(scratch.field_buf, heightfield.T)
+        draw_contour_net_to_surface(
+            surface=self.rendered_surface,
+            heightfield_wh=scratch.field_buf,
+            lut=lut,
+            intervals=state.net_intervals,
+            bandwidth=state.net_bandwidth,
+            bg_color=config.COLOR_NET_BACKGROUND,
+            scratch=scratch,
+        )
 
     def _draw_tile_contour_edges(
         self,
@@ -170,7 +142,7 @@ class Renderer2D(BaseRenderer):
     ) -> None:
         """Stamps 1px tile-boundary isoline outlines onto target surface."""
         self.rendered_surface.fill(config.COLOR_NET_BACKGROUND)
-        edges = self._bake_tile_contour_edges(
+        edges = bake_tile_contour_edges(
             heightfield=heightfield,
             lut=lut,
             intervals=state.net_intervals,
@@ -208,63 +180,6 @@ class Renderer2D(BaseRenderer):
                 np.copyto(h_target, h_src, where=h_where)
         finally:
             del surf_view
-
-    @staticmethod
-    def _bake_tile_contour_edges(
-        heightfield: NDArray[np.float32],
-        lut: NDArray[np.uint8],
-        intervals: float,
-    ) -> _TileContourEdges:
-        """Computes seam-crossing colors and masks on a coarse tile grid."""
-        h_dim, w_dim = heightfield.shape
-        v_cols = max(0, w_dim - 1)
-        h_rows = max(0, h_dim - 1)
-
-        v_colors = np.zeros((h_dim, v_cols, 3), dtype=np.uint8)
-        v_active = np.zeros((h_dim, v_cols), dtype=bool)
-        h_colors = np.zeros((h_rows, w_dim, 3), dtype=np.uint8)
-        h_active = np.zeros((h_rows, w_dim), dtype=bool)
-
-        if h_dim < 2 and w_dim < 2:
-            return _TileContourEdges(
-                v_colors=v_colors,
-                v_active=v_active,
-                h_colors=h_colors,
-                h_active=h_active,
-            )
-
-        count = max(1, int(round(intervals))) + 1
-        levels = np.linspace(0.0, 1.0, count, dtype=np.float32)
-
-        has_v = w_dim > 1
-        has_h = h_dim > 1
-        if has_v:
-            v_min = np.minimum(heightfield[:, :-1], heightfield[:, 1:])
-            v_max = np.maximum(heightfield[:, :-1], heightfield[:, 1:])
-        if has_h:
-            h_min = np.minimum(heightfield[:-1, :], heightfield[1:, :])
-            h_max = np.maximum(heightfield[:-1, :], heightfield[1:, :])
-
-        for lvl in levels:
-            lvl_idx = int(np.clip(lvl * 1023.0, 0, 1023))
-            lvl_color = lut[lvl_idx]
-
-            if has_v:
-                v_cross = (v_min <= lvl) & (lvl <= v_max)
-                v_active |= v_cross
-                v_colors[v_cross] = lvl_color
-
-            if has_h:
-                h_cross = (h_min <= lvl) & (lvl <= h_max)
-                h_active |= h_cross
-                h_colors[h_cross] = lvl_color
-
-        return _TileContourEdges(
-            v_colors=v_colors,
-            v_active=v_active,
-            h_colors=h_colors,
-            h_active=h_active,
-        )
 
     def _draw_hud(self, state: InspectorState, fps: float) -> None:
         """Renders stacked blueprint metadata and active channel cards."""

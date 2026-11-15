@@ -1,6 +1,6 @@
 """Base rendering helpers and shared HUD card components."""
 
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 import pygame
 import config
 
@@ -9,13 +9,36 @@ class BaseRenderer:
     """Provides shared typography and padded HUD background blitting."""
 
     def __init__(self, screen: pygame.Surface) -> None:
-        """Initializes typography resources."""
+        """Initializes typography resources and card surface cache."""
         self.screen: pygame.Surface = screen
         self.width: int = screen.get_width()
         self.height: int = screen.get_height()
         self.font: pygame.font.Font = pygame.font.SysFont(
             "monospace", 13, bold=True
         )
+        self._card_bg_cache: Dict[
+            Tuple[int, int, Tuple[int, int, int, int]], pygame.Surface
+        ] = {}
+
+    def get_translucent_card_surface(
+        self,
+        width: int,
+        height: int,
+        bg_rgba: Tuple[int, int, int, int],
+    ) -> pygame.Surface:
+        """Returns cached translucent surface for given size and RGBA."""
+        key = (width, height, bg_rgba)
+        cached = self._card_bg_cache.get(key)
+        if cached is not None:
+            return cached
+
+        if len(self._card_bg_cache) >= 32:
+            self._card_bg_cache.clear()
+
+        bg_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+        bg_surf.fill(bg_rgba)
+        self._card_bg_cache[key] = bg_surf
+        return bg_surf
 
     def draw_card(
         self,
@@ -37,8 +60,7 @@ class BaseRenderer:
         box_w = max_w + (pad * 2)
         box_h = (len(rendered) * line_h) + (pad * 2)
 
-        bg_surf = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
-        bg_surf.fill(bg_rgba)
+        bg_surf = self.get_translucent_card_surface(box_w, box_h, bg_rgba)
         self.screen.blit(bg_surf, (x, y))
 
         if border_color is not None:
@@ -79,9 +101,7 @@ class BaseRenderer:
         box_w = surf.get_width() + 16
         box_h = surf.get_height() + 6
 
-        bg_card = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
-        bg_card.fill(bg_color)
-
+        bg_card = self.get_translucent_card_surface(box_w, box_h, bg_color)
         ry = self.height - box_h - 10
 
         self.screen.blit(bg_card, (rx, ry))

@@ -264,14 +264,15 @@ continuous elevation to color in under 0.1 milliseconds:
     - VIRIDIS   : Perceptually uniform standard blue-to-yellow colormap.
 
 Color Inversion (Key [I]):
-Pressing [I] reverses the active color ramp along its elevation axis in real
-time. In Greyscale, this creates an X-ray/film-negative effect; in thermal
-palettes, it inverts peak-versus-valley visual polarity.
+Both normal and inverted 1,024-entry LUTs are pre-baked once at startup.
+Pressing [I] swaps the active table instantaneously with zero runtime
+re-baking or array copying. In Greyscale, this creates an X-ray/film-negative
+effect; in thermal palettes, it inverts peak-versus-valley visual polarity.
 
 Topographical Relief Net / Isoline Mode (Key [N]):
 Pressing [N] turns the visualization into a topographical contour map:
     - In 1D: Toggles between solid hypsometric scanline fill and a colored
-             vector line trace for the composite curve.
+             vector line trace painted in one vectorized NumPy pass.
     - In 2D: Replaces the continuous raster surface with a dark blueprint
              contour map, tracing elevation slices across the field.
 
@@ -352,38 +353,7 @@ selected layer.
     ESCAPE / CLOSE      : Clean application shutdown.
 
 
-[10.0 CONFIGURATION]
--------------------------------------------------------------------------------
-All global defaults, display parameters, scrubbing dividers, and UI metrics
-reside in config.py. Refer to MANUAL.txt for a complete field-by-field
-reference and unit guide. Key configuration groups include:
-
-    SCREEN_WIDTH / HEIGHT     : Desktop window resolution in pixels.
-    FPS                       : Display refresh rate target cap (Hz).
-    DEFAULT_VIEW_MODE         : Boot viewport mode (Mode 1 or Mode 2).
-
-    DEFAULT_TILE_SIZE         : Starting tile step size in pixels.
-    MIN / MAX_TILE_SIZE       : Power-of-two quantization boundary clamps.
-    WARP_FACTOR               : Domain warping shear intensity in 2D.
-
-    DEFAULT_NET_ENABLED       : Starting toggle state of the isoline net.
-    DEFAULT_NET_INTERVALS     : Number of elevation intervals between 0 and 1.
-    DEFAULT_NET_BANDWIDTH     : Tolerance band thickness for contour lines.
-    COLOR_NET_BACKGROUND      : Background RGB color for 2D net mode.
-
-    DEFAULT_*_CYCLES          : Starting cycle counts across the screen.
-    *_MIN / MAX_CYCLES        : Frequency tuning bounds preventing artifacts.
-    CYCLE_ZOOM_RATE           : Continuous exponential keyboard zoom rate.
-    MOUSE_ZOOM_SENSITIVITY    : Exponential zoom sensitivity for Right-Drag.
-
-    SCRUB_SUB_SAMPLE_FACTOR   : Shared preview divider while scrubbing Mode 2.
-    SCRUB_SETTLE_DELAY        : Keyboard settle wait time before full-res snap.
-
-    CRUST / RELIEF_BUDGET     : Mathematical elevation budget shares.
-    MIN_RELIEF_FACTOR         : Minimum relief floor preserving low ripples.
-
-
-[11.0 PROJECT STRUCTURE]
+[10.0 PROJECT STRUCTURE]
 -------------------------------------------------------------------------------
 pysineblend/
 │
@@ -394,20 +364,20 @@ pysineblend/
 ├── README.md                  # System specification and documentation
 │
 └── wave_inspector/            # Pure Wave Inspector Package
-    ├── app.py                 # Application lifecycle, timers, and mesh cache
+    ├── app.py                 # Lifecycle, timers & dynamic config-driven meshes
     ├── contour_net.py         # Single-pass isolines, cell culling & tile edges
     ├── formulas.py            # Master formula catalog, math, and 2D specs
-    ├── heatmaps.py            # 1,024-slot LUT bakes and array inversion
+    ├── heatmaps.py            # Pre-baked normal & inverted 1,024-slot LUTs
     ├── input_handler.py       # Smart click focus, mouse drags & SHIFT routing
     ├── state.py               # Shared state machine, offsets, hitboxes & scrub
     ├── wave_model.py          # Pure NumPy 1D/2D waves, dynamic centers & mesh
     └── renderers/             # Viewport Renderers
-        ├── base_renderer.py   # Typography and dynamic HUD card drawer
-        ├── renderer_1d.py     # 4-panel oscilloscope with Panel 4 focus & cache
+        ├── base_renderer.py   # Typography, cached alpha cards & HUD drawer
+        ├── renderer_1d.py     # 4-panel oscilloscope & vectorized Net trace
         └── renderer_2d.py     # Color-before-expand 2D baking, hitboxes & net
 
 
-[12.0 LICENSE]
+[11.0 LICENSE]
 -------------------------------------------------------------------------------
 This project is licensed under the MIT License. See the root LICENSE file
 for complete terms.

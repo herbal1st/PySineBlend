@@ -309,8 +309,9 @@ class Renderer2D(BaseRenderer):
         box_w = sum(surf.get_width() for surf, _ in rendered) + (pad * 2)
         box_h = max(surf.get_height() for surf, _ in rendered) + (pad * 2)
 
-        bg_surf = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
-        bg_surf.fill(config.COLOR_HUD_CARD_2D)
+        bg_surf = self.get_translucent_card_surface(
+            box_w, box_h, config.COLOR_HUD_CARD_2D
+        )
         self.screen.blit(bg_surf, (x, y))
 
         pygame.draw.rect(

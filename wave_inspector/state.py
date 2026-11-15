@@ -11,9 +11,9 @@ from wave_inspector.formulas import (
     Preset2D,
 )
 from wave_inspector.heatmaps import (
+    HeatmapSpec,
     PaletteEntry,
     get_heatmap_catalog,
-    invert_lut,
 )
 
 
@@ -47,9 +47,7 @@ class InspectorState:
     is_scrubbing: bool = False
     scrub_timer: float = 0.0
     channel_hitboxes: Dict[int, pygame.Rect] = field(default_factory=dict)
-    palettes: List[PaletteEntry] = field(
-        default_factory=get_heatmap_catalog
-    )
+    palettes: List[HeatmapSpec] = field(default_factory=get_heatmap_catalog)
 
     @property
     def formula_1d(self) -> FormulaPreset:
@@ -63,14 +61,12 @@ class InspectorState:
 
     @property
     def active_palette(self) -> PaletteEntry:
-        """Returns active palette tuple with dynamic inversion applied."""
-        name, raw_lut, desc = self.palettes[self.active_palette_index]
-        if not self.is_inverted or raw_lut is None:
-            return name, raw_lut, desc
+        """Returns active palette tuple with pre-baked inversion."""
+        spec = self.palettes[self.active_palette_index]
+        if not self.is_inverted:
+            return spec.name, spec.lut, spec.description
 
-        display_name = f"[INV] {name}"
-        inverted_lut = invert_lut(raw_lut)
-        return display_name, inverted_lut, desc
+        return f"[INV] {spec.name}", spec.inverted_lut, spec.description
 
     def mark_scrubbing(self) -> None:
         """Engages coarse scrubbing mode and resets the settle timer."""

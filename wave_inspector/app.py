@@ -50,12 +50,13 @@ class WaveMathInspector:
             config.SCRUB_SUB_SAMPLE_FACTOR,
         )
 
-        self.coarse_meshes: Dict[int, CoordinateMesh2D] = {
-            sz: build_coarse_mesh_2d(
-                config.SCREEN_WIDTH, config.SCREEN_HEIGHT, sz
+        self.coarse_meshes: Dict[int, CoordinateMesh2D] = {}
+        tile_sz = max(1, config.MIN_TILE_SIZE)
+        while tile_sz <= config.MAX_TILE_SIZE:
+            self.coarse_meshes[tile_sz] = build_coarse_mesh_2d(
+                config.SCREEN_WIDTH, config.SCREEN_HEIGHT, tile_sz
             )
-            for sz in (8, 16, 32)
-        }
+            tile_sz *= 2
 
         self.renderer_1d: Renderer1D = Renderer1D(self.screen)
         self.renderer_2d: Renderer2D = Renderer2D(self.screen)

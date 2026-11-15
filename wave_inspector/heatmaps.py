@@ -1,10 +1,85 @@
 """Diagnostic color lookup tables for mathematical wave visualization."""
 
+from dataclasses import dataclass
 from typing import List, Optional, Tuple
 import numpy as np
 from numpy.typing import NDArray
 
 PaletteEntry = Tuple[str, Optional[NDArray[np.uint8]], str]
+
+
+@dataclass(frozen=True, slots=True)
+class HeatmapSpec:
+    """Holds pre-baked normal and inverted 1,024-slot colormap LUTs."""
+
+    name: str
+    lut: NDArray[np.uint8]
+    inverted_lut: NDArray[np.uint8]
+    description: str
+
+
+def invert_lut(lut: NDArray[np.uint8]) -> NDArray[np.uint8]:
+    """Reverses colormap array along elevation axis."""
+    return np.ascontiguousarray(lut[::-1])
+
+
+def get_heatmap_catalog() -> List[HeatmapSpec]:
+    """Compiles consolidated 4-entry playlist of diagnostic heatmaps."""
+    grey_ramp = np.linspace(
+        0.0, 255.0, 1024, dtype=np.float32
+    ).astype(np.uint8)
+    greyscale = np.ascontiguousarray(
+        np.repeat(grey_ramp[:, np.newaxis], 3, axis=1)
+    )
+
+    magma_stops: List[Tuple[float, Tuple[int, int, int]]] = [
+        (0.00, (0, 0, 4)),
+        (0.20, (40, 11, 84)),
+        (0.40, (101, 21, 110)),
+        (0.60, (182, 54, 121)),
+        (0.80, (251, 136, 97)),
+        (0.95, (254, 216, 154)),
+        (1.00, (252, 253, 191)),
+    ]
+
+    turbo_stops: List[Tuple[float, Tuple[int, int, int]]] = [
+        (0.00, (48, 18, 59)),
+        (0.15, (70, 134, 251)),
+        (0.35, (27, 229, 181)),
+        (0.55, (164, 252, 60)),
+        (0.75, (251, 185, 56)),
+        (0.90, (227, 73, 24)),
+        (1.00, (122, 4, 3)),
+    ]
+
+    viridis_stops: List[Tuple[float, Tuple[int, int, int]]] = [
+        (0.00, (68, 1, 84)),
+        (0.25, (59, 82, 139)),
+        (0.50, (33, 145, 140)),
+        (0.75, (94, 201, 98)),
+        (1.00, (253, 231, 37)),
+    ]
+
+    return [
+        _make_spec("GREYSCALE", greyscale, "Linear Monochrome"),
+        _make_spec("MAGMA", _bake_lut(magma_stops), "Perceptual Sequential"),
+        _make_spec("TURBO", _bake_lut(turbo_stops), "Spectral Rainbow"),
+        _make_spec("VIRIDIS", _bake_lut(viridis_stops), "Perceptual Standard"),
+    ]
+
+
+def _make_spec(
+    name: str,
+    lut: NDArray[np.uint8],
+    description: str,
+) -> HeatmapSpec:
+    """Builds a HeatmapSpec with pre-baked normal and inverted LUTs."""
+    return HeatmapSpec(
+        name=name,
+        lut=lut,
+        inverted_lut=invert_lut(lut),
+        description=description,
+    )
 
 
 def _bake_lut(
@@ -24,55 +99,3 @@ def _bake_lut(
 
     stacked = np.stack([r_lut, g_lut, b_lut], axis=-1)
     return np.ascontiguousarray(stacked)
-
-
-def invert_lut(lut: NDArray[np.uint8]) -> NDArray[np.uint8]:
-    """Reverses colormap array along elevation axis."""
-    return np.ascontiguousarray(lut[::-1])
-
-
-def get_heatmap_catalog() -> List[PaletteEntry]:
-    """Compiles consolidated 4-entry playlist of diagnostic heatmaps."""
-    # 1. Greyscale Baseline
-    grey_ramp = np.linspace(
-        0.0, 255.0, 1024, dtype=np.float32
-    ).astype(np.uint8)
-    greyscale = np.repeat(grey_ramp[:, np.newaxis], 3, axis=1)
-
-    # 2. Magma (Perceptual High-Contrast Sequential)
-    magma_stops: List[Tuple[float, Tuple[int, int, int]]] = [
-        (0.00, (0, 0, 4)),
-        (0.20, (40, 11, 84)),
-        (0.40, (101, 21, 110)),
-        (0.60, (182, 54, 121)),
-        (0.80, (251, 136, 97)),
-        (0.95, (254, 216, 154)),
-        (1.00, (252, 253, 191)),
-    ]
-
-    # 3. Turbo (Google Spectral Rainbow Curve)
-    turbo_stops: List[Tuple[float, Tuple[int, int, int]]] = [
-        (0.00, (48, 18, 59)),
-        (0.15, (70, 134, 251)),
-        (0.35, (27, 229, 181)),
-        (0.55, (164, 252, 60)),
-        (0.75, (251, 185, 56)),
-        (0.90, (227, 73, 24)),
-        (1.00, (122, 4, 3)),
-    ]
-
-    # 4. Viridis (Perceptual Standard Colormap)
-    viridis_stops: List[Tuple[float, Tuple[int, int, int]]] = [
-        (0.00, (68, 1, 84)),
-        (0.25, (59, 82, 139)),
-        (0.50, (33, 145, 140)),
-        (0.75, (94, 201, 98)),
-        (1.00, (253, 231, 37)),
-    ]
-
-    return [
-        ("GREYSCALE", np.ascontiguousarray(greyscale), "Linear Monochrome"),
-        ("MAGMA", _bake_lut(magma_stops), "Perceptual Sequential"),
-        ("TURBO", _bake_lut(turbo_stops), "Spectral Rainbow"),
-        ("VIRIDIS", _bake_lut(viridis_stops), "Perceptual Standard"),
-    ]

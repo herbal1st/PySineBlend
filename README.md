@@ -323,16 +323,17 @@ selected layer.
                           Panel 4 is selected in Mode 1).
 
     RIGHT DRAG          : Proportionally zoom ALL wave channels together (drag
-                          right for higher frequency / smaller features; drag
-                          left for lower frequency / wider features). Linear
-                          waves zoom from the screen center; radial domes
-                          scale ripples around their own center.
+                          right to zoom IN / lower frequency and wider
+                          features; drag left to zoom OUT / higher frequency
+                          and smaller features). Linear waves zoom from the
+                          screen center; radial domes scale ripples around
+                          their own center.
     SHIFT + RIGHT DRAG  : Zoom ONLY the currently selected layer.
 
     HOLD RIGHT / LEFT   : Keyboard mirror of Right-Drag: zoom ALL channels
-                          together (Right = higher frequency; Left = lower
-                          frequency). In Mode 1 with Panel 4 selected, always
-                          zooms all layers.
+                          together (Right = zoom IN / wider waves; Left = zoom
+                          OUT / denser waves). In Mode 1 with Panel 4
+                          selected, always zooms all layers.
     SHIFT + RIGHT / LEFT: Zoom ONLY the currently selected layer.
 
     SPACE               : Step tile size coarser (or toggle on).

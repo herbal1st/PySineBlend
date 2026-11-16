@@ -244,6 +244,7 @@ class InputHandler:
         single_layer: bool,
     ) -> None:
         """Scales all wave channels, or only focused one when single_layer."""
+        safe_factor = max(1e-6, factor)
         scale_all = (not single_layer) or (
             state.active_mode == 1 and state.selected_panel_index == 3
         )
@@ -252,7 +253,7 @@ class InputHandler:
         if scale_all or state.selected_panel_index == 0:
             old_base = state.base_cycles
             new_base = self._clamp(
-                old_base * factor,
+                old_base / safe_factor,
                 config.BASE_MIN_CYCLES,
                 config.BASE_MAX_CYCLES,
             )
@@ -264,7 +265,7 @@ class InputHandler:
         if scale_all or state.selected_panel_index == 1:
             old_relief = state.relief_cycles
             new_relief = self._clamp(
-                old_relief * factor,
+                old_relief / safe_factor,
                 config.RELIEF_MIN_CYCLES,
                 config.RELIEF_MAX_CYCLES,
             )
@@ -276,7 +277,7 @@ class InputHandler:
         if scale_all or state.selected_panel_index == 2:
             old_crust = state.crust_cycles
             new_crust = self._clamp(
-                old_crust * factor,
+                old_crust / safe_factor,
                 config.CRUST_MIN_CYCLES,
                 config.CRUST_MAX_CYCLES,
             )

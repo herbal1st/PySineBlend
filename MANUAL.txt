@@ -152,14 +152,16 @@ MIN_RELIEF_FACTOR             : Minimum relief floor ensuring that even in the
 CYCLE_ZOOM_RATE               : Smooth zoom speed when holding LEFT or RIGHT
                                 arrows (unmodified zooms all layers; SHIFT
                                 zooms only the selected layer). Wave cycles
-                                scale smoothly per second so zooming feels
-                                steady at both low and high cycle counts.
+                                scale smoothly per second (RIGHT zooms in to
+                                broader waves; LEFT zooms out to denser waves)
+                                at both low and high cycle counts.
                                 Metric: Rate multiplier per second (float).
 
 MOUSE_ZOOM_SENSITIVITY        : Controls how quickly waves zoom when dragging
                                 horizontally with the Right Mouse Button (RMB)
-                                across Modes 1 and 2. Uses smooth exponential
-                                scaling per pixel dragged.
+                                across Modes 1 and 2 (right zooms in; left
+                                zooms out), using smooth exponential scaling
+                                per pixel dragged.
                                 Metric: Zoom rate per pixel (float).
 
 BASE_MIN_CYCLES               : Lower and upper safety limits preventing Base

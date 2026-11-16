@@ -144,9 +144,9 @@ class Renderer1D(BaseRenderer):
         self._draw_palette_card(p4_pal_text)
 
     def render(self) -> None:
-        """Blits the cached 1D frame and overlays the controls card."""
+        """Blits the cached 1D frame and overlays the studio footer."""
         self.screen.blit(self.cached_surface, (0, 0))
-        self.draw_controls_card(is_dark_theme=False)
+        self.draw_studio_footer(active_mode=1)
 
     def _draw_panel(
         self,
@@ -238,12 +238,12 @@ class Renderer1D(BaseRenderer):
             )
 
         title_color = (
-            config.COLOR_SELECTION
+            config.COLOR_INPUT_ACTIVE
             if is_selected
             else (
-                config.COLOR_MUTED_TITLE
+                config.COLOR_HUD_TEXT_MUTED
                 if is_silenced
-                else config.COLOR_TITLE
+                else config.COLOR_HUD_TEXT_NORMAL
             )
         )
         title_surf = self.font.render(title, True, title_color)
@@ -251,7 +251,7 @@ class Renderer1D(BaseRenderer):
         box_h = title_surf.get_height() + 6
 
         bg_card = self.get_translucent_card_surface(
-            box_w, box_h, config.COLOR_TITLE_CARD
+            box_w, box_h, config.COLOR_HUD_CARD_2D
         )
 
         tx = config.PANEL_TITLE_X
@@ -336,12 +336,12 @@ class Renderer1D(BaseRenderer):
 
     def _draw_palette_card(self, text: str) -> None:
         """Renders active palette info in bottom-right footer of Panel 4."""
-        surf = self.font.render(text, True, config.COLOR_TITLE)
+        surf = self.font.render(text, True, config.COLOR_HUD_TEXT_NORMAL)
         box_w = surf.get_width() + 16
         box_h = surf.get_height() + 6
 
         bg_card = self.get_translucent_card_surface(
-            box_w, box_h, config.COLOR_TITLE_CARD
+            box_w, box_h, config.COLOR_HUD_CARD_2D
         )
 
         rx = self.width - box_w - config.PANEL_TITLE_X

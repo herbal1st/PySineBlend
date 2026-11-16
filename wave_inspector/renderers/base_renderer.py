@@ -76,33 +76,98 @@ class BaseRenderer:
 
         return box_h
 
-    def draw_controls_card(self, is_dark_theme: bool = False) -> None:
-        """Renders standardized keyboard cheat sheet docked to bottom-left."""
-        if is_dark_theme:
-            text = (
-                "[1/2]: View | [TAB]: Formula | "
-                "[LMB/RMB]: Pan/Zoom (+SHIFT: Layer) | [SPACE]: Step | "
-                "[C/I]: Pal | [P]: Persp | [N]: Net | [R]: Reset"
-            )
-            text_color = config.COLOR_HUD_TEXT_NORMAL
-            bg_color = config.COLOR_HUD_CARD_2D
-            rx = 10
-        else:
-            text = (
-                "[1/2]: View | [TAB]: Formula | "
-                "[LMB/RMB]: Pan/Zoom (+SHIFT: Layer) | [SPACE]: Step | "
-                "[C/I]: Pal | [N]: Net | [R]: Reset"
-            )
-            text_color = config.COLOR_TITLE
-            bg_color = config.COLOR_TITLE_CARD
-            rx = config.PANEL_TITLE_X
+    def draw_studio_footer(self, active_mode: int = 1) -> None:
+        """Renders combined two-line studio nav and controls card."""
+        pad = 6
+        line_gap = 4
+        line_h = self.font.get_linesize()
 
-        surf = self.font.render(text, True, text_color)
-        box_w = surf.get_width() + 16
-        box_h = surf.get_height() + 6
+        segments = self._build_footer_segments(active_mode)
+        nav_w = sum(surf.get_width() for surf, _ in segments)
 
-        bg_card = self.get_translucent_card_surface(box_w, box_h, bg_color)
+        ctrl_str = self._build_footer_controls_text(active_mode)
+        ctrl_surf = self.font.render(
+            ctrl_str, True, config.COLOR_HUD_TEXT_NORMAL
+        )
+
+        box_w = max(nav_w, ctrl_surf.get_width()) + (pad * 2)
+        box_h = (2 * line_h) + line_gap + (pad * 2)
+        rx = 10
         ry = self.height - box_h - 10
 
-        self.screen.blit(bg_card, (rx, ry))
-        self.screen.blit(surf, (rx + 8, ry + 3))
+        bg_surf = self.get_translucent_card_surface(
+            box_w, box_h, config.COLOR_HUD_CARD_2D
+        )
+        self.screen.blit(bg_surf, (rx, ry))
+
+        self._draw_footer_nav_line(segments, rx + pad, ry + pad, line_h)
+        self.screen.blit(
+            ctrl_surf, (rx + pad, ry + pad + line_h + line_gap)
+        )
+
+    def _build_footer_segments(
+        self,
+        active_mode: int,
+    ) -> List[Tuple[pygame.Surface, bool]]:
+        """Renders footer mode tags and marks the active mode segment."""
+        mode_tags = (
+            ("[1] Wave Math", 1),
+            ("[2] 2D Strata", 2),
+        )
+        prefix_surf = self.font.render(
+            "STUDIO: ", True, config.COLOR_HUD_TEXT_ACTIVE
+        )
+        pipe_surf = self.font.render(
+            " | ", True, config.COLOR_HUD_TEXT_MUTED
+        )
+
+        segments: List[Tuple[pygame.Surface, bool]] = [(prefix_surf, False)]
+        for idx, (lbl, mid) in enumerate(mode_tags):
+            if idx > 0:
+                segments.append((pipe_surf, False))
+            is_active = mid == active_mode
+            color = (
+                config.COLOR_HUD_TEXT_ACTIVE
+                if is_active
+                else config.COLOR_HUD_TEXT_NORMAL
+            )
+            surf = self.font.render(lbl, True, color)
+            segments.append((surf, is_active))
+
+        return segments
+
+    def _build_footer_controls_text(self, active_mode: int) -> str:
+        """Formats context-sensitive control hints for the active mode."""
+        persp_str = "[P]: Persp | " if active_mode == 2 else ""
+        return (
+            f"[1/2]: View | [TAB]: Formula | "
+            f"[LMB/RMB/Arrows]: Nav/Zoom (+SHIFT: Layer) | "
+            f"[SPACE]: Step | [C/I]: Palette | {persp_str}"
+            f"[N]: Net | [R]: Reset"
+        )
+
+    def _draw_footer_nav_line(
+        self,
+        segments: List[Tuple[pygame.Surface, bool]],
+        start_x: int,
+        start_y: int,
+        line_h: int,
+    ) -> None:
+        """Blits mode segments and frames the active mode in selection blue."""
+        curr_x = start_x
+        for surf, is_active in segments:
+            self.screen.blit(surf, (curr_x, start_y))
+            if is_active:
+                rect = (
+                    curr_x - 3,
+                    start_y - 1,
+                    surf.get_width() + 6,
+                    line_h + 2,
+                )
+                pygame.draw.rect(
+                    self.screen,
+                    config.COLOR_SELECTION,
+                    rect,
+                    config.PANEL_SELECTION_WIDTH,
+                )
+            curr_x += surf.get_width()

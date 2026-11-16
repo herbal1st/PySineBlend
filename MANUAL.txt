@@ -54,7 +54,7 @@ DEFAULT_TILE_SIZE             : Starting width and height of each square block
                                 Metric: Pixels (int).
 
 MIN_TILE_SIZE                 : Smallest power-of-two tile block size allowed
-                                when stepping tiles finer (e.g. 8px).
+                                when stepping tiles finer.
                                 Metric: Pixels (int).
 
 MAX_TILE_SIZE                 : Largest power-of-two tile block size allowed
@@ -78,8 +78,8 @@ DEFAULT_NET_ENABLED           : Starting state of the Topographical Relief Net
                                 Metric: Toggle boolean (bool).
 
 DEFAULT_NET_INTERVALS         : Number of height slices dividing terrain from
-                                sea level (0.0) to mountain peaks (1.0). For
-                                example, 9.0 intervals draw 10 contour rings.
+                                sea level (0.0) to mountain peaks (1.0). N
+                                intervals draw N + 1 distinct contour rings.
                                 Metric: Float interval count (float).
 
 DEFAULT_NET_BANDWIDTH         : Height tolerance used in continuous 2D mode to
@@ -132,14 +132,13 @@ CRUST_START                   : Starting height of the Continental Crust wave
 [MATHEMATICAL ELEVATION BUDGETS]
 -------------------------------------------------------------------------------
 CRUST_BUDGET                  : Maximum share of total height reserved for the
-                                Continental Crust wave (e.g. 0.40 = 40%).
-                                In budgeted formulas, CRUST_BUDGET plus
-                                RELIEF_BUDGET equals 1.000 so peaks never
-                                flatten out against the top ceiling.
+                                Continental Crust wave. In budgeted formulas,
+                                CRUST_BUDGET plus RELIEF_BUDGET equals 1.000
+                                so peaks never flatten against the top ceiling.
                                 Metric: Fraction share [0.0 - 1.0] (float).
 
 RELIEF_BUDGET                 : Maximum share of total height reserved for
-                                local mountains and hills (e.g. 0.60 = 60%).
+                                local mountains and hills.
                                 Metric: Fraction share [0.0 - 1.0] (float).
 
 MIN_RELIEF_FACTOR             : Minimum relief floor ensuring that even in the
@@ -182,18 +181,17 @@ CRUST_MAX_CYCLES                far Continental Crust cycles can be zoomed.
 SCRUB_SUB_SAMPLE_FACTOR       : Temporary resolution divider used in Mode 2
                                 while zooming frequencies or dragging wave
                                 positions in smooth mode (when tile stepping is
-                                off). A value of 4 evaluates ~1/16th as many
-                                points per frame—using smooth upscaling for
-                                color mode and coarse-cell culling for crisp
-                                1px Relief Net lines—before snapping to full
-                                clarity once you stop adjusting.
+                                off). Evaluates a coarser grid per frame—using
+                                smooth upscaling for color mode and coarse-cell
+                                culling for crisp 1px Relief Net lines—before
+                                snapping to full clarity once you stop tuning.
                                 Metric: Integer divider (int).
 
 SCRUB_SETTLE_DELAY            : Short wait time after releasing a keyboard zoom
                                 key before Mode 2 renders the final full-res
-                                1760x990 frame (mouse drags settle immediately
-                                on button release). Prevents wasted full-screen
-                                recalculations between quick key taps.
+                                frame (mouse drags settle immediately on button
+                                release). Prevents wasted full-screen math
+                                between quick key taps.
                                 Metric: Elapsed seconds (float).
 
 
@@ -216,31 +214,30 @@ COLOR_SILENCED_WAVE           : Muted grey color used to draw the flat line in
                                 Metric: RGB color tuple (int, int, int).
 
 COLOR_SELECTION               : High-contrast blue used to highlight the active
-                                focused panel in 1D (including Panel 4 all-
-                                layer focus) and the channel focus card in 2D.
+                                focused panel in 1D, the channel focus card in
+                                2D, and the active mode frame in the footer.
                                 Metric: RGB color tuple (int, int, int).
-
-COLOR_TITLE                   : Dark crisp text color for active panel titles.
-                                Metric: RGB color tuple (int, int, int).
-
-COLOR_MUTED_TITLE             : Soft grey text color for silenced panel titles.
-                                Metric: RGB color tuple (int, int, int).
-
-COLOR_TITLE_CARD              : Translucent white card background placed behind
-                                1D panel titles and footer labels so text stays
-                                readable over wave lines.
-                                Metric: RGBA color tuple (int, int, int, int).
 
 COLOR_HUD_CARD_2D             : Translucent dark slate background placed behind
-                                HUD overlays and controls in Mode 2.
+                                1D panel title cards, HUD info overlays, and
+                                the unified studio footer.
                                 Metric: RGBA color tuple (int, int, int, int).
 
-COLOR_HUD_TEXT_ACTIVE         : Bright amber-gold highlight color used for the
-                                top status line in Mode 2 HUD cards.
+COLOR_HUD_TEXT_ACTIVE         : Bright amber-gold highlight color used for
+                                active mode headers and footer labels.
                                 Metric: RGB color tuple (int, int, int).
 
-COLOR_HUD_TEXT_NORMAL         : Soft silver-white color used for general stats
-                                and formula readouts inside Mode 2 HUD cards.
+COLOR_HUD_TEXT_NORMAL         : Soft silver-white color used for readable body
+                                text inside title cards, HUD cards, and footer
+                                controls.
+                                Metric: RGB color tuple (int, int, int).
+
+COLOR_HUD_TEXT_MUTED          : De-emphasized slate grey used for silenced
+                                panel titles and subtle footer separators.
+                                Metric: RGB color tuple (int, int, int).
+
+COLOR_INPUT_ACTIVE            : Bright cyan-blue highlight color used for the
+                                active focused panel title in Mode 1.
                                 Metric: RGB color tuple (int, int, int).
 
 

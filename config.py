@@ -8,9 +8,9 @@ BACKGROUND_COLOR: tuple[int, int, int] = (255, 255, 255)  # rgb
 
 # ------ Viewport & Stepping Modes ------
 DEFAULT_VIEW_MODE: int = 1  # mode
-DEFAULT_TILE_SIZE: int = 8  # pixels
-MIN_TILE_SIZE: int = 8  # pixels
-MAX_TILE_SIZE: int = 32  # pixels
+DEFAULT_TILE_SIZE: int = 4  # pixels
+MIN_TILE_SIZE: int = 4  # pixels
+MAX_TILE_SIZE: int = 16  # pixels
 WARP_FACTOR: float = 0.15  # fraction
 
 # ------ Relief Net (Isoline) Settings ------
@@ -54,18 +54,17 @@ COLOR_GRID: tuple[int, int, int] = (230, 233, 240)  # rgb
 COLOR_WAVE: tuple[int, int, int] = (20, 25, 35)  # rgb
 COLOR_SILENCED_WAVE: tuple[int, int, int] = (185, 190, 200)  # rgb
 COLOR_SELECTION: tuple[int, int, int] = (35, 105, 225)  # rgb
-COLOR_TITLE: tuple[int, int, int] = (25, 30, 40)  # rgb
-COLOR_MUTED_TITLE: tuple[int, int, int] = (130, 135, 145)  # rgb
-COLOR_TITLE_CARD: tuple[int, int, int, int] = (255, 255, 255, 230)  # rgba
 COLOR_HUD_CARD_2D: tuple[int, int, int, int] = (15, 15, 20, 210)  # rgba
 COLOR_HUD_TEXT_ACTIVE: tuple[int, int, int] = (255, 220, 80)  # rgb
 COLOR_HUD_TEXT_NORMAL: tuple[int, int, int] = (220, 220, 220)  # rgb
+COLOR_HUD_TEXT_MUTED: tuple[int, int, int] = (130, 135, 145)  # rgb
+COLOR_INPUT_ACTIVE: tuple[int, int, int] = (80, 200, 255)  # rgb
 
 # ------ Panel Dimensions & Thickness ------
 PANEL_COUNT: int = 4  # panels
 PANEL_TOP_MARGIN: int = 36  # pixels
 PANEL_BOTTOM_MARGIN: int = 14  # pixels
-PANEL_COMPOSITE_BOTTOM_MARGIN: int = 38  # pixels
+PANEL_COMPOSITE_BOTTOM_MARGIN: int = 64  # pixels
 PANEL_TITLE_X: int = 20  # pixels
 PANEL_TITLE_Y: int = 4  # pixels
 PANEL_TITLE_TEXT_X: int = 8  # pixels

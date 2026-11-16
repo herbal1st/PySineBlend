@@ -77,10 +77,10 @@ class Renderer2D(BaseRenderer):
         )
 
     def render(self, state: InspectorState, fps: float) -> None:
-        """Blits baked 2D surface, metadata, and controls."""
+        """Blits baked 2D surface, metadata, and studio footer."""
         self.screen.blit(self.rendered_surface, (0, 0))
         self._draw_hud(state, fps)
-        self.draw_controls_card(is_dark_theme=True)
+        self.draw_studio_footer(active_mode=2)
 
     def _get_contour_scratch(self) -> ContourScratch:
         """Lazily allocates reusable (W, H) buffers for contour rendering."""

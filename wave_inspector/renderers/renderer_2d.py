@@ -318,7 +318,7 @@ class Renderer2D(BaseRenderer):
             self.screen,
             config.COLOR_SELECTION,
             (x, y, box_w, box_h),
-            config.PANEL_SELECTION_WIDTH,
+            2,
         )
 
         state.channel_hitboxes.clear()

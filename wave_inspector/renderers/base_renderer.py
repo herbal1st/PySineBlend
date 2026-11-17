@@ -168,6 +168,6 @@ class BaseRenderer:
                     self.screen,
                     config.COLOR_SELECTION,
                     rect,
-                    config.PANEL_SELECTION_WIDTH,
+                    2,
                 )
             curr_x += surf.get_width()

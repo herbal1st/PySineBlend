@@ -359,7 +359,7 @@ selected layer.
 pysineblend/
 │
 ├── main.py                    # Root bootstrap entry point
-├── config.py                  # Central runtime settings and layout constants
+├── config.py                  # Central runtime settings
 ├── requirements.txt           # Minimal dependencies (numpy, pygame-ce)
 ├── MANUAL.txt                 # Complete config.py variable guide & metrics
 ├── README.md                  # System specification and documentation

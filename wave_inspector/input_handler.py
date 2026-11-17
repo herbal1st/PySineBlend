@@ -102,10 +102,8 @@ class InputHandler:
     ) -> None:
         """Selects clicked panel/card layer or starts a mouse drag."""
         if state.active_mode == 1:
-            panel_h = config.SCREEN_HEIGHT // config.PANEL_COUNT
-            panel_idx = min(
-                config.PANEL_COUNT - 1, max(0, pos[1] // panel_h)
-            )
+            panel_h = config.SCREEN_HEIGHT // 4
+            panel_idx = min(3, max(0, pos[1] // panel_h))
             if panel_idx not in self._get_valid_channels(state):
                 return
             if state.selected_panel_index != panel_idx:

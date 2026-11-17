@@ -1,12 +1,12 @@
- ____           ____                        ____    ___                      __   
-/\  _`\        /\  _`\   __                /\  _`\ /\_ \                    /\ \  
-\ \ \L\ \__  __\ \,\L\_\/\_\    ___      __\ \ \L\ \//\ \      __    ___    \_\ \ 
- \ \ ,__/\ \/\ \\/_\__ \\/\ \ /' _ `\  /'__`\ \  _ <'\ \ \   /'__`\/' _ `\  /'_` \
-  \ \ \/\ \ \_\ \ /\ \L\ \ \ \/\ \/\ \/\  __/\ \ \L\ \\_\ \_/\  __//\ \/\ \/\ \L\ \
-   \ \_\ \/`____ \\ `\____\ \_\ \_\ \_\ \____\\ \____//\____\ \____\ \_\ \_\ \___,_\
-    \/_/  `/___/> \\/_____/\/_/\/_/\/_/\/____/ \/___/ \/____/\/____/\/_/\/_/\/__,_ /
-             /\___/                                                               
-             \/__/                                                                
+ ____           ____                        ____    ___                  __   
+/\  _`\        /\  _`\   __                /\  _`\ /\_ \                /\ \  
+\ \ \L\ \__  __\ \,\L\_\/\_\    ___      __\ \ \L\ \//\ \    __   ___   \_\ \ 
+ \ \ ,__/\ \/\ \\/_\__ \\/\ \ /' _ `\  /'__`\ \  _ <'\ \ \ /'__`\/' _ `\/'_` \
+  \ \ \/\ \ \_\ \ /\ \L\ \ \ \/\ \/\ \/\  __/\ \ \L\ \\_\ \/\  __//\ \/\ \L\ \
+   \ \_\ \/`____ \\ `\____\ \_\ \_\ \_\ \____\\ \____//\____\ \____\ \_\ \___,_\
+    \/_/  `/___/> \\/_____/\/_/\/_/\/_/\/____/ \/___/ \/____/\/____/\/_/\/__,_ /
+             /\___/                                                           
+             \/__/                                                            
 ===============================================================================
                  PYSINEBLEND - CONFIGURATION MANUAL & FIELD GUIDE
 ===============================================================================
@@ -197,7 +197,7 @@ SCRUB_SETTLE_DELAY            : Short wait time after releasing a keyboard zoom
                                 Metric: Elapsed seconds (float).
 
 
-[INTERFACE COLORS & METRICS]
+[INTERFACE COLORS]
 -------------------------------------------------------------------------------
 COLOR_PANEL_DIVIDER           : Light grey line color separating the four
                                 stacked panels in the 1D oscilloscope.
@@ -212,7 +212,7 @@ COLOR_WAVE                    : Primary dark ink color used to draw active
                                 Metric: RGB color tuple (int, int, int).
 
 COLOR_SILENCED_WAVE           : Muted grey color used to draw the flat line in
-                                Panel 3 when a 2-layer formula ignores crust.
+                                Panel 2 when a 2-layer formula silences relief.
                                 Metric: RGB color tuple (int, int, int).
 
 COLOR_SELECTION               : High-contrast blue used to highlight the active
@@ -241,49 +241,6 @@ COLOR_HUD_TEXT_MUTED          : De-emphasized slate grey used for silenced
 COLOR_INPUT_ACTIVE            : Bright cyan-blue highlight color used for the
                                 active focused panel title in Mode 1.
                                 Metric: RGB color tuple (int, int, int).
-
-
-[PANEL DIMENSIONS & THICKNESS]
--------------------------------------------------------------------------------
-PANEL_COUNT                   : Number of vertically stacked panels drawn in
-                                Mode 1 (Base, Relief, Crust, Composite Result).
-                                Metric: Panel count (int).
-
-PANEL_TOP_MARGIN              : Empty space at the top of each 1D panel so wave
-                                peaks do not collide with the title card.
-                                Metric: Pixels (int).
-
-PANEL_BOTTOM_MARGIN           : Empty space at the bottom of Panels 1, 2, and 3
-                                above the panel divider line.
-                                Metric: Pixels (int).
-
-PANEL_COMPOSITE_BOTTOM_MARGIN : Extra bottom padding in Panel 4 leaving room
-                                for the bottom controls and palette footer.
-                                Metric: Pixels (int).
-
-PANEL_TITLE_X                 : Top-left horizontal and vertical offsets placing
-PANEL_TITLE_Y                   each panel's title card inside its panel box.
-                                Metric: Pixels (int).
-
-PANEL_TITLE_TEXT_X            : Inner horizontal and vertical text padding
-PANEL_TITLE_TEXT_Y              inside each title card box.
-                                Metric: Pixels (int).
-
-PANEL_DIVIDER_WIDTH           : Line thickness of the horizontal dividers
-                                separating the four 1D panels.
-                                Metric: Pixels (int).
-
-PANEL_SELECTION_WIDTH         : Line thickness of the blue focus border around
-                                the active selected panel or channel card.
-                                Metric: Pixels (int).
-
-COMPONENT_LINE_WIDTH          : Stroke thickness of the component wave curves
-                                (Base, Relief, Crust) in Panels 1 to 3.
-                                Metric: Pixels (int).
-
-COMPOSITE_LINE_WIDTH          : Thicker stroke used for the final blended wave
-                                curve in Panel 4 so it stands out clearly.
-                                Metric: Pixels (int).
 
 ===============================================================================
 [!] END OF MANUAL | MAINTAIN ALIGNMENT WITH CONFIG.PY AND README.MD

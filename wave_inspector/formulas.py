@@ -87,12 +87,6 @@ def _tectonic_subduction(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
     return (0.40 * (c * c)) + (0.60 * b * (r * c))
 
 
-def _stepped_mesa(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
-    """Quantizes relief into multi-tiered plateau steps."""
-    terraces = np.floor(r * 4.0) / 4.0
-    return (0.35 * c) + (0.65 * b * terraces)
-
-
 def _factored_virtual_crust(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
     """Simulates tectonic floor and peaks using virtual crust scaling."""
     return c * (config.CRUST_BUDGET + (config.RELIEF_BUDGET * b))
@@ -155,6 +149,13 @@ COMPOSITE_CATALOG: List[FormulaPreset] = [
         func=_dynamic_lerp,
     ),
     FormulaPreset(
+        name="Tectonic Subduction Belt",
+        shorthand="(0.40 * (C**2)) + (0.60 * B * (R * C))",
+        uses_relief=True,
+        uses_crust=True,
+        func=_tectonic_subduction,
+    ),
+    FormulaPreset(
         name="Factored Virtual Crust",
         shorthand="C * (0.40 + 0.60 * B)",
         uses_relief=False,
@@ -188,20 +189,6 @@ COMPOSITE_CATALOG: List[FormulaPreset] = [
         uses_relief=False,
         uses_crust=True,
         func=_soft_natural_saturation,
-    ),
-    FormulaPreset(
-        name="Tectonic Subduction Belt",
-        shorthand="(0.40 * (C**2)) + (0.60 * B * (R * C))",
-        uses_relief=True,
-        uses_crust=True,
-        func=_tectonic_subduction,
-    ),
-    FormulaPreset(
-        name="Stepped Mesa Terraces",
-        shorthand="(0.35 * C) + (0.65 * B * (floor(R * 4.0) / 4.0))",
-        uses_relief=True,
-        uses_crust=True,
-        func=_stepped_mesa,
     ),
 ]
 
@@ -280,13 +267,22 @@ PRESETS_2D: List[Preset2D] = [
         composite_index=4,
     ),
     Preset2D(
+        name="Tectonic Subduction Belt",
+        shorthand="(0.40 * (C**2)) + (0.60 * B * (R * C))",
+        uses_base=True,
+        uses_relief=True,
+        uses_crust=True,
+        func=_tectonic_subduction,
+        composite_index=5,
+    ),
+    Preset2D(
         name="Factored Virtual Crust",
         shorthand="C * (0.40 + 0.60 * B)",
         uses_base=True,
         uses_relief=False,
         uses_crust=True,
         func=_factored_virtual_crust,
-        composite_index=5,
+        composite_index=6,
     ),
     Preset2D(
         name="Tibetan High Plateau",
@@ -295,7 +291,7 @@ PRESETS_2D: List[Preset2D] = [
         uses_relief=False,
         uses_crust=True,
         func=_tibetan_high_plateau,
-        composite_index=6,
+        composite_index=7,
     ),
     Preset2D(
         name="Razor Ridge / Granite Peaks",
@@ -304,7 +300,7 @@ PRESETS_2D: List[Preset2D] = [
         uses_relief=False,
         uses_crust=True,
         func=_razor_ridge,
-        composite_index=7,
+        composite_index=8,
     ),
     Preset2D(
         name="Inverted Canyonlands",
@@ -313,7 +309,7 @@ PRESETS_2D: List[Preset2D] = [
         uses_relief=False,
         uses_crust=True,
         func=_inverted_canyonlands,
-        composite_index=8,
+        composite_index=9,
     ),
     Preset2D(
         name="Soft Natural Saturation",
@@ -322,24 +318,6 @@ PRESETS_2D: List[Preset2D] = [
         uses_relief=False,
         uses_crust=True,
         func=_soft_natural_saturation,
-        composite_index=9,
-    ),
-    Preset2D(
-        name="Tectonic Subduction Belt",
-        shorthand="(0.40 * (C**2)) + (0.60 * B * (R * C))",
-        uses_base=True,
-        uses_relief=True,
-        uses_crust=True,
-        func=_tectonic_subduction,
         composite_index=10,
-    ),
-    Preset2D(
-        name="Stepped Mesa Terraces",
-        shorthand="(0.35 * C) + (0.65 * B * (floor(R * 4.0) / 4.0))",
-        uses_base=True,
-        uses_relief=True,
-        uses_crust=True,
-        func=_stepped_mesa,
-        composite_index=11,
     ),
 ]

@@ -175,7 +175,7 @@ Pressing [P] toggles between two spatial projection models at runtime:
 -------------------------------------------------------------------------------
 The inspector maintains bi-directional state synchronization between viewports:
 
-MODE 1 CATALOG (12 Composite Formulas):
+MODE 1 CATALOG (11 Composite Formulas):
 -------------------------------------------------------------------------------
 Mode 1 cycles strictly through composite formulas so Panel 4 never renders a
 redundant copy of an upper component:
@@ -187,7 +187,6 @@ Three-Layer Formulas:
     - Inverse Crust Bypass       : Shoreline bypass preserving low relief.
     - Dynamic Lerp / Morph       : Smooth linear blend between crust and base.
     - Tectonic Subduction Belt   : Squared crust basin with ridge clamping.
-    - Stepped Mesa Terraces      : Multi-tier terrace quantization with crust.
 
 Two-Layer Formulas (Relief Multiplier Silenced):
     - Factored Virtual Crust     : Crust drives both ground floor and peaks.
@@ -197,14 +196,17 @@ Two-Layer Formulas (Relief Multiplier Silenced):
     - Soft Natural Saturation    : Smooth hyperbolic tangent compression.
 
 
-MODE 2 CATALOG (15 Total Presets):
+MODE 2 CATALOG (14 Total Presets):
 -------------------------------------------------------------------------------
 Mode 2 allows inspecting isolated wave geometry alongside composite formulas:
-    - Presets 1 to 3   : Solo Components (Vertical Base, Horizontal Relief,
-                         and Radial Continental Crust).
-    - Presets 4 to 8   : 3-Layer Composite Series.
-    - Presets 9 to 13  : 2-Layer Series (Toggled via [P] between Radial/Warped).
-    - Presets 14 to 15 : Advanced 3-Layer Hybrids.
+    - Presets 1 to 3  : Solo Components (Vertical Base, Horizontal Relief,
+                        and Radial Continental Crust).
+    - Presets 4 to 9  : 3-Layer Composite Series (Master Budgeting, Global
+                        Envelope, Volcanic Island, Inverse Bypass, Dynamic
+                        Lerp, and Tectonic Subduction).
+    - Presets 10 to 14: 2-Layer Series (Virtual Crust, Tibetan Plateau, Razor
+                        Ridge, Inverted Canyonlands, Soft Saturation; toggled
+                        via [P] between Radial and Warped views).
 
 
 [7.0 DISCRETE TILE STEPPING & INTERACTIVE SCRUBBING]

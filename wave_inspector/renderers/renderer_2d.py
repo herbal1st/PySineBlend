@@ -257,6 +257,7 @@ class Renderer2D(BaseRenderer):
         col_silenced = (90, 95, 105)
 
         pad = 8
+        line_h = self.font.get_linesize()
         preset = state.preset_2d
 
         if preset.uses_base:
@@ -306,8 +307,20 @@ class Renderer2D(BaseRenderer):
             (self.font.render(text, True, color), ch_id)
             for text, color, ch_id in segments
         ]
-        box_w = sum(surf.get_width() for surf, _ in rendered) + (pad * 2)
-        box_h = max(surf.get_height() for surf, _ in rendered) + (pad * 2)
+        row1_w = sum(surf.get_width() for surf, _ in rendered)
+
+        is_bdg_focus = state.selected_panel_index == 3
+        bdg_label = "BUDGET       : "
+        bdg_val = (
+            f"[ {state.crust_budget:.2f} C / {state.relief_budget:.2f} R ]"
+        )
+        bdg_col = config.COLOR_INPUT_ACTIVE if is_bdg_focus else col_muted
+        bdg_lbl_surf = self.font.render(bdg_label, True, col_label)
+        bdg_val_surf = self.font.render(bdg_val, True, bdg_col)
+        row2_w = bdg_lbl_surf.get_width() + bdg_val_surf.get_width()
+
+        box_w = max(row1_w, row2_w) + (pad * 2)
+        box_h = (line_h * 2) + 6 + (pad * 2)
 
         bg_surf = self.get_translucent_card_surface(
             box_w, box_h, config.COLOR_HUD_CARD_2D
@@ -327,6 +340,24 @@ class Renderer2D(BaseRenderer):
             self.screen.blit(surf, (curr_x, y + pad))
             if ch_id is not None:
                 state.channel_hitboxes[ch_id] = pygame.Rect(
-                    curr_x - 4, y, surf.get_width() + 8, box_h
+                    curr_x - 4, y + pad - 2, surf.get_width() + 8, line_h + 4
                 )
             curr_x += surf.get_width()
+
+        r2_y = y + pad + line_h + 6
+        self.screen.blit(bdg_lbl_surf, (x + pad, r2_y))
+        val_x = x + pad + bdg_lbl_surf.get_width()
+        self.screen.blit(bdg_val_surf, (val_x, r2_y))
+
+        bdg_rect = pygame.Rect(
+            val_x - 2, r2_y - 2, bdg_val_surf.get_width() + 4, line_h + 4
+        )
+        state.channel_hitboxes[3] = bdg_rect
+
+        if is_bdg_focus:
+            pygame.draw.rect(
+                self.screen,
+                config.COLOR_SELECTION,
+                bdg_rect,
+                2,
+            )

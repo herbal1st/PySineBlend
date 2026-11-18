@@ -98,6 +98,8 @@ def build_wave_frame_1d(
     base_cycles: float,
     relief_cycles: float,
     crust_cycles: float,
+    crust_budget: float,
+    relief_budget: float,
     tile_stepping: bool = False,
     tile_size: int = config.DEFAULT_TILE_SIZE,
     base_offset_x: float = 0.0,
@@ -123,7 +125,9 @@ def build_wave_frame_1d(
         coords - crust_offset_x, crust_cycles, config.CRUST_START
     )
 
-    raw_composite = formula.func(base, relief, crust)
+    raw_composite = formula.func(
+        base, relief, crust, crust_budget, relief_budget
+    )
     composite = np.clip(raw_composite, 0.0, 1.0).astype(np.float32)
 
     return WaveFrame1D(
@@ -140,6 +144,8 @@ def build_wave_frame_2d(
     base_cycles: float,
     relief_cycles: float,
     crust_cycles: float,
+    crust_budget: float,
+    relief_budget: float,
     is_warped: bool = False,
     base_offset_x: float = 0.0,
     base_offset_y: float = 0.0,
@@ -207,7 +213,9 @@ def build_wave_frame_2d(
                 x_grid, base_cycles, config.BASE_START
             )
 
-    raw_composite = preset.func(base_2d, relief_2d, crust_2d)
+    raw_composite = preset.func(
+        base_2d, relief_2d, crust_2d, crust_budget, relief_budget
+    )
     clipped = np.clip(raw_composite, 0.0, 1.0).astype(np.float32)
     return np.ascontiguousarray(clipped)
 

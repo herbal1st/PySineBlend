@@ -1,12 +1,12 @@
  ____           ____                        ____    ___                  __   
-/\  _`\        /\  _`\   __                /\  _`\ /\_ \                /\ \  
-\ \ \L\ \__  __\ \,\L\_\/\_\    ___      __\ \ \L\ \//\ \    __   ___   \_\ \ 
- \ \ ,__/\ \/\ \\/_\__ \\/\ \ /' _ `\  /'__`\ \  _ <'\ \ \ /'__`\/' _ `\/'_` \
-  \ \ \/\ \ \_\ \ /\ \L\ \ \ \/\ \/\ \/\  __/\ \ \L\ \\_\ \/\  __//\ \/\ \L\ \
-   \ \_\ \/`____ \\ `\____\ \_\ \_\ \_\ \____\\ \____//\____\ \____\ \_\ \___,_\
-    \/_/  `/___/> \\/_____/\/_/\/_/\/_/\/____/ \/___/ \/____/\/____/\/_/\/__,_ /
-             /\___/                                                           
-             \/__/                                                            
+/\  _`\        /\  _`\   __                /\  _`\ /\_ \                    /\ \  
+\ \ \L\ \__  __\ \,\L\_\/\_\    ___      __\ \ \L\ \//\ \      __    ___    \_\ \ 
+ \ \ ,__/\ \/\ \\/_\__ \\/\ \ /' _ `\  /'__`\ \  _ <'\ \ \   /'__`\/' _ `\  /'_` \
+  \ \ \/\ \ \_\ \ /\ \L\ \ \ \/\ \/\ \/\  __/\ \ \L\ \\_\ \_/\  __//\ \/\ \/\ \L\ \
+   \ \_\ \/`____ \\ `\____\ \_\ \_\ \_\ \____\\ \____//\____\ \____\ \_\ \_\ \___,_\
+    \/_/  `/___/> \\/_____/\/_/\/_/\/_/\/____/ \/___/ \/____/\/____/\/_/\/_/\/__,_ /
+             /\___/                                                               
+             \/__/                                                                
 ===============================================================================
                  PYSINEBLEND - CONFIGURATION MANUAL & FIELD GUIDE
 ===============================================================================
@@ -131,20 +131,43 @@ CRUST_START                   : Starting height of the Continental Crust wave
 
 [MATHEMATICAL ELEVATION BUDGETS]
 -------------------------------------------------------------------------------
-CRUST_BUDGET                  : Maximum share of total height reserved for the
-                                Continental Crust wave. In budgeted formulas,
-                                CRUST_BUDGET plus RELIEF_BUDGET equals 1.000
-                                so peaks never flatten against the top ceiling.
+CRUST_BUDGET                  : Initial startup height share reserved for the
+                                Continental Crust wave. In dynamic budgeted
+                                formulas, Crust Budget plus Relief Budget
+                                strictly equals 1.00 so peaks never flatten
+                                against the top ceiling.
                                 Metric: Fraction share [0.0 - 1.0] (float).
 
-RELIEF_BUDGET                 : Maximum share of total height reserved for
-                                local mountains and hills.
+RELIEF_BUDGET                 : Initial startup height share reserved for local
+                                mountains and hills.
                                 Metric: Fraction share [0.0 - 1.0] (float).
 
 MIN_RELIEF_FACTOR             : Minimum relief floor ensuring that even in the
                                 flattest plains or lowlands, gentle ripples
                                 and small hills never disappear completely.
                                 Metric: Fraction multiplier [0.0 - 1.0] (float).
+
+CRUST_BUDGET_MIN              : Lowest allowed share for Continental Crust when
+                                scrubbing the budget live. Keeps continents from
+                                vanishing completely so a ground floor remains.
+                                Metric: Fraction floor [0.0 - 1.0] (float).
+
+CRUST_BUDGET_MAX              : Highest allowed share for Continental Crust
+                                when scrubbing live. Ensures at least some
+                                room remains for local hill and ridge detail.
+                                Metric: Fraction ceiling [0.0 - 1.0] (float).
+
+BUDGET_SCRUB_RATE             : Speed at which the Crust/Relief budget split
+                                shifts per second when holding Left or Right
+                                arrow keys on Panel 4 (Mode 1) or the Budget
+                                row (Mode 2).
+                                Metric: Fraction change per second (float).
+
+MOUSE_BUDGET_SENSITIVITY      : Gentle, dampened responsiveness scaling when
+                                scrubbing the Elevation Budget via mouse drag.
+                                Prevents abrupt jumps if frame timing drops
+                                slightly on lower-spec computers.
+                                Metric: Rate per pixel (float).
 
 
 [FREQUENCY TUNING RATES & CLAMPS]
@@ -181,12 +204,13 @@ CRUST_MAX_CYCLES                far Continental Crust cycles can be zoomed.
 [INTERACTIVE SCRUBBING THROTTLING]
 -------------------------------------------------------------------------------
 SCRUB_SUB_SAMPLE_FACTOR       : Temporary resolution divider used in Mode 2
-                                while zooming frequencies or dragging wave
-                                positions in smooth mode (when tile stepping is
-                                off). Evaluates a coarser grid per frame—using
-                                smooth upscaling for color mode and coarse-cell
-                                culling for crisp 1px Relief Net lines—before
-                                snapping to full clarity once you stop tuning.
+                                while zooming frequencies, scrubbing budgets,
+                                or dragging wave positions in smooth mode
+                                (when tile stepping is off). Evaluates a
+                                coarser grid per frame—using smooth upscaling
+                                for color mode and coarse-cell culling for
+                                crisp 1px Relief Net lines—before snapping to
+                                full clarity once you stop tuning.
                                 Metric: Integer divider (int).
 
 SCRUB_SETTLE_DELAY            : Short wait time after releasing a keyboard zoom
@@ -216,7 +240,7 @@ COLOR_SILENCED_WAVE           : Muted grey color used to draw the flat line in
                                 Metric: RGB color tuple (int, int, int).
 
 COLOR_SELECTION               : High-contrast blue used to highlight the active
-                                focused panel in 1D, the channel focus card in
+                                focused panel in 1D, the channel/budget card in
                                 2D, and the active mode frame in the footer.
                                 Metric: RGB color tuple (int, int, int).
 
@@ -239,7 +263,8 @@ COLOR_HUD_TEXT_MUTED          : De-emphasized slate grey used for silenced
                                 Metric: RGB color tuple (int, int, int).
 
 COLOR_INPUT_ACTIVE            : Bright cyan-blue highlight color used for the
-                                active focused panel title in Mode 1.
+                                active focused panel title in Mode 1 and the
+                                active budget readout in Mode 2.
                                 Metric: RGB color tuple (int, int, int).
 
 ===============================================================================

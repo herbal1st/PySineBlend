@@ -1,5 +1,5 @@
 ```
- ____           ____                        ____    ___                      __   
+ ____           ____                        ____    ___                  __   
 /\  _`\        /\  _`\   __                /\  _`\ /\_ \                    /\ \  
 \ \ \L\ \__  __\ \,\L\_\/\_\    ___      __\ \ \L\ \//\ \      __    ___    \_\ \ 
  \ \ ,__/\ \/\ \\/_\__ \\/\ \ /' _ `\  /'__`\ \  _ <'\ \ \   /'__`\/' _ `\  /'_` \
@@ -59,9 +59,9 @@ The software provides dual-viewport parity across two spatial dimensions:
     Mode 2: 2D Spatial Synthesizer (Planar Topographical Elevation Field)
 
 This allows creators to see how pure mathematical formulas, frequency
-adjustments, per-layer spatial offsets, coordinate warping, discrete tile
-steps, and color palettes translate from single-line curves into rich
-continuous 2D landscapes.
+adjustments, elevation budget splits, per-layer spatial offsets, coordinate
+warping, discrete tile steps, and color palettes translate from single-line
+curves into rich continuous 2D landscapes.
 
 All mathematical computations run via high-performance vectorized NumPy
 arrays, with hardware-accelerated rendering handled through Pygame-ce.
@@ -89,12 +89,14 @@ Each wave role maintains its own independent (x, y) spatial offset, allowing
 you to pan all layers together or slide individual waves, bands, and circular
 centers relative to one another in real time.
 
-Mathematical Elevation Budgeting (Zero-Clipping Invariant):
+Live Dynamic Elevation Budgeting (Zero-Clipping Invariant):
 To prevent terrain from shearing off against an artificial flat ceiling,
-formulas divide available elevation into mathematical budgets (crust share
-and relief share, e.g. 0.40 crust + 0.60 relief). Because their maximum sum
-cannot exceed 1.000, peaks never clip flat, and inland valleys remain
-naturally elevated above sea level on high continental ground.
+formulas divide available elevation into live, adjustable budgets: Crust
+Budget (CB) and Relief Budget (RB), which strictly sum to 1.00 (for example,
+0.40 C / 0.60 R). Shifting more budget to Crust lifts broad continents out of
+the ocean; shifting more budget to Relief plunges continents and emphasizes
+towering peaks. Because CB + RB always equals 1.00, peaks never clip flat,
+and inland valleys remain naturally elevated above sea level on high ground.
 
 
 [5.0 DUAL-VIEWPORT ARCHITECTURE]
@@ -107,14 +109,17 @@ Presents four vertically stacked real-time oscilloscope panels:
     - Panel 1: Base Detail wave D(x).
     - Panel 2: Relief Multiplier envelope M(x).
     - Panel 3: Continental Crust tectonic floor C(x).
-    - Panel 4: Composite Result from the active formula ([ALL ACTIVE]).
+    - Panel 4: Composite Result from the active formula ([ALL ACTIVE]),
+               displaying the live BUDGET: [ 0.40 C / 0.60 R ] readout.
 
-Smart Panel Selection:
+Smart Panel Selection & Live Budget Scrubbing:
 Click directly on Panel 1, 2, 3, or 4 with either mouse button (or cycle with
 UP/DOWN) to select focus. On 2-layer formulas where Relief is silenced, clicks
 on Panel 2 are safely ignored and UP/DOWN skips straight between Panels 1, 3,
-and 4. Selecting Panel 4 highlights it in blue with [ALL ACTIVE] and directs
-single-layer tuning and resets across all three wave channels together.
+and 4. Selecting Panel 4 highlights it in blue with [ALL ACTIVE]: dragging
+with RMB or holding LEFT/RIGHT arrows smoothly shifts the Crust/Relief
+elevation budget in real time, while SHIFT + Right-Drag / Left-Drag adjusts
+all three wave layers together.
 
 Panel 4 Dual-Mode Visualization:
     - Standard Mode: Renders a solid hypsometric color fill under the curve
@@ -124,9 +129,9 @@ Panel 4 Dual-Mode Visualization:
 
 Idle Frame Caching:
 Mode 1 renders its four panels, fills, and trace lines onto an offscreen
-cached surface and only rebuilds when wave frequencies, offsets, focus,
-formulas, stepping, or palettes change. While idle, redrawing the viewport
-takes a single surface copy.
+cached surface and only rebuilds when wave frequencies, budgets, offsets,
+focus, formulas, stepping, or palettes change. While idle, redrawing the
+viewport takes a single surface copy.
 
 
 MODE 2: 2D SPATIAL SYNTHESIZER (Key [2])
@@ -154,11 +159,17 @@ so patterns do not drift toward a corner, while off-center circular Crust
 domes stay anchored on their own circle centers so ripples grow and shrink
 right around the pond you placed.
 
-Clickable Channel Card:
-Click directly on B, R, or C inside the blue-bordered CHANNEL FOCUS strip to
-switch active layers without nudging the canvas. Inactive channels (such as
-R: Silenced on 2-layer formulas or unused channels on Solo presets) ignore
-clicks automatically.
+Dual-Row Channel & Budget Card:
+Below the top HUD card sits the blue-bordered Channel & Budget card:
+    - Top Row (CHANNEL FOCUS): Displays B, R, and C cycle counts. Click any
+      active letter or press SHIFT + UP/DOWN to switch between layers.
+      Inactive channels (such as R: Silenced on 2-layer formulas) ignore
+      clicks automatically.
+    - Bottom Row (BUDGET): Displays [ 0.40 C / 0.60 R ]. Press UP/DOWN (or
+      click directly on the budget cell) to jump between the channel row and
+      the budget row. When focused, dragging horizontally with RMB or holding
+      LEFT/RIGHT arrows smoothly shifts the tectonic Crust/Relief split using
+      dampened mouse sensitivity so movements stay steady even on slower PCs.
 
 Perspective / Projection Geometry (Key [P]):
 Pressing [P] toggles between two spatial projection models at runtime:
@@ -235,10 +246,10 @@ Visual Representation Across Viewports:
              biome chunks (similar to a classic 16-bit overworld map).
 
 Interactive Smooth Scrubbing & Settle-Debounce (Mode 2):
-When Tile Stepping is OFF and you tune frequencies or drag positions in Mode 2
-(via Right-Drag, Left-Drag, SHIFT+Drag, or LEFT/RIGHT keys), the engine
-temporarily shifts into a lighter scrubbing preview instead of recalculating
-all 1.74 million pixels every frame:
+When Tile Stepping is OFF and you tune frequencies, scrub the elevation
+budget, or drag positions in Mode 2 (via Right-Drag, Left-Drag, SHIFT+Drag,
+or LEFT/RIGHT keys), the engine temporarily shifts into a lighter scrubbing
+preview instead of recalculating all 1.74 million pixels every frame:
     - Endpoint-Aligned (N + 1) Grid: Evaluates a precomputed sub-sampled mesh
       (SCRUB_SUB_SAMPLE_FACTOR, default 4x smaller) whose outer edges align
       exactly with the full-resolution screen corners so terrain never shifts.
@@ -310,33 +321,39 @@ selected layer.
 
     TAB / SHIFT + TAB   : Cycle to next / previous formula preset.
 
-    UP / DOWN           : Switch channel focus (Base -> Relief -> Crust, plus
-                          Panel 4 [ALL ACTIVE] in Mode 1). Automatically skips
-                          silenced layers (Relief on 2-layer formulas and
-                          inactive channels on 2D Solo presets).
+    UP / DOWN           : - Mode 1: Switch panel focus (Panel 1 -> Panel 2 ->
+                            Panel 3 -> Panel 4 [ALL ACTIVE]). Automatically
+                            skips silenced Panel 2 on 2-layer formulas.
+                          - Mode 2: Toggle vertical focus between the Channel
+                            Focus row and the Elevation Budget row.
+
+    SHIFT + UP / DOWN   : Mode 2 only: Cycle horizontal channel focus across
+                          active wave layers (Base -> Relief -> Crust).
 
     CLICK PANEL (MODE 1): Click any active Panel 1-4 (LMB or RMB) to focus it
                           immediately; silenced Panel 2 clicks are ignored.
-    CLICK CARD (MODE 2) : Click B, R, or C inside the blue-bordered channel
-                          strip to select that layer without moving the view.
+    CLICK CARD (MODE 2) : Click B, R, C, or the BUDGET cell inside the
+                          blue-bordered card to select it immediately.
 
     LEFT DRAG           : Pan all wave layers together 1:1 with the cursor.
     SHIFT + LEFT DRAG   : Move ONLY the currently selected layer (or all when
-                          Panel 4 is selected in Mode 1).
+                          Panel 4 / Budget is selected).
 
-    RIGHT DRAG          : Proportionally zoom ALL wave channels together (drag
-                          right to zoom IN / lower frequency and wider
-                          features; drag left to zoom OUT / higher frequency
-                          and smaller features). Linear waves zoom from the
-                          screen center; radial domes scale ripples around
-                          their own center.
-    SHIFT + RIGHT DRAG  : Zoom ONLY the currently selected layer.
+    RIGHT DRAG          : - On Wave Layers: Proportionally zoom ALL wave
+                            channels together (drag right to zoom IN / wider
+                            features; drag left to zoom OUT / denser features).
+                          - On Panel 4 (Mode 1) or Budget Row (Mode 2):
+                            Smoothly scrub the Crust/Relief elevation budget
+                            with gentle, dampened mouse sensitivity.
+    SHIFT + RIGHT DRAG  : Zoom ONLY the currently selected wave layer.
 
-    HOLD RIGHT / LEFT   : Keyboard mirror of Right-Drag: zoom ALL channels
-                          together (Right = zoom IN / wider waves; Left = zoom
-                          OUT / denser waves). In Mode 1 with Panel 4
-                          selected, always zooms all layers.
-    SHIFT + RIGHT / LEFT: Zoom ONLY the currently selected layer.
+    HOLD RIGHT / LEFT   : Keyboard mirror of Right-Drag:
+                          - On Wave Layers: Zoom ALL channels together (Right
+                            = zoom IN / wider waves; Left = zoom OUT / denser
+                            waves).
+                          - On Panel 4 (Mode 1) or Budget Row (Mode 2):
+                            Continuously shift the Crust/Relief budget split.
+    SHIFT + RIGHT / LEFT: Zoom ONLY the currently selected wave layer.
 
     SPACE               : Step tile size coarser (or toggle on).
     SHIFT + SPACE       : Step tile size finer (or toggle off).
@@ -347,11 +364,11 @@ selected layer.
     P                   : Toggle spatial perspective (Mode 2 only: Radial/Warped).
     N                   : Toggle Topographical Relief Net / 1D Fill mode.
 
-    R                   : Reset ALL channels' frequencies and spatial offsets
-                          to default configuration.
+    R                   : Reset ALL channels' frequencies, spatial offsets, and
+                          the Crust/Relief elevation budget to defaults.
     SHIFT + R           : Reset ONLY the currently selected channel's frequency
                           and offset (in Mode 1 with Panel 4 selected, resets
-                          all 3 channels).
+                          all 3 channels and the budget).
 
     ESCAPE / CLOSE      : Clean application shutdown.
 

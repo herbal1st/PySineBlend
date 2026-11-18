@@ -56,6 +56,9 @@ class InputHandler:
         if event.key == pygame.K_ESCAPE:
             return False
 
+        mods = pygame.key.get_mods()
+        shift_held = bool(mods & pygame.KMOD_SHIFT)
+
         if event.key == pygame.K_1:
             state.sync_to_mode(1)
             self._clamp_focus_for_active_mode(state)
@@ -63,21 +66,16 @@ class InputHandler:
             state.sync_to_mode(2)
             self._clamp_focus_for_active_mode(state)
         elif event.key == pygame.K_SPACE:
-            mods = pygame.key.get_mods()
-            direction = -1 if mods & pygame.KMOD_SHIFT else 1
-            state.step_tile_size(direction)
+            state.step_tile_size(-1 if shift_held else 1)
         elif event.key == pygame.K_TAB:
-            mods = pygame.key.get_mods()
-            direction = -1 if mods & pygame.KMOD_SHIFT else 1
+            direction = -1 if shift_held else 1
             if state.active_mode == 1:
                 state.cycle_formula_1d(direction)
             else:
                 state.cycle_formula_2d(direction)
             self._clamp_focus_for_active_mode(state)
         elif event.key == pygame.K_c:
-            mods = pygame.key.get_mods()
-            direction = -1 if mods & pygame.KMOD_SHIFT else 1
-            state.cycle_palette(direction)
+            state.cycle_palette(-1 if shift_held else 1)
         elif event.key == pygame.K_i:
             state.toggle_inversion()
         elif event.key == pygame.K_p:
@@ -85,12 +83,14 @@ class InputHandler:
                 state.toggle_perspective()
         elif event.key == pygame.K_n:
             state.toggle_net_mode()
-        elif event.key == pygame.K_UP:
-            self._move_channel_focus(state, -1)
-        elif event.key == pygame.K_DOWN:
-            self._move_channel_focus(state, 1)
+        elif event.key in (pygame.K_UP, pygame.K_DOWN):
+            direction = -1 if event.key == pygame.K_UP else 1
+            if state.active_mode == 2 and shift_held:
+                self._cycle_layer_channel_2d(state, direction)
+            else:
+                self._move_channel_focus(state, direction)
         elif event.key == pygame.K_r:
-            self._reset_tuning(state, pygame.key.get_mods())
+            self._reset_tuning(state, mods)
 
         return True
 
@@ -116,6 +116,9 @@ class InputHandler:
         for channel_idx, rect in state.channel_hitboxes.items():
             if rect.collidepoint(pos):
                 state.selected_panel_index = channel_idx
+                state.needs_rebuild_2d = True
+                self.active_mouse_button = button
+                self.drag_start = pos
                 return
 
         self.active_mouse_button = button
@@ -141,17 +144,27 @@ class InputHandler:
             self._shift_wave_offsets(state, ndx, ndy, single_layer)
             state.mark_scrubbing()
         elif self.active_mouse_button == 3 and dx != 0:
-            factor = math.exp(float(dx) * config.MOUSE_ZOOM_SENSITIVITY)
-            self._scale_channels(state, factor, single_layer=shift_held)
-            state.mark_scrubbing()
+            if state.selected_panel_index == 3:
+                step_val = float(dx) * config.MOUSE_BUDGET_SENSITIVITY
+                state.set_crust_budget(state.crust_budget + step_val)
+            else:
+                factor = math.exp(float(dx) * config.MOUSE_ZOOM_SENSITIVITY)
+                self._scale_channels(state, factor, single_layer=shift_held)
+                state.mark_scrubbing()
 
     def _handle_held_keys(self, state: InspectorState, dt: float) -> None:
-        """Scales channel frequencies continuously via held arrow keys."""
+        """Scales channel frequencies or budget via held arrow keys."""
         keys = pygame.key.get_pressed()
         move_left = keys[pygame.K_LEFT]
         move_right = keys[pygame.K_RIGHT]
 
         if move_left == move_right or dt <= 0.0:
+            return
+
+        direction = 1 if move_right else -1
+        if state.selected_panel_index == 3:
+            step_val = float(direction) * config.BUDGET_SCRUB_RATE * dt
+            state.set_crust_budget(state.crust_budget + step_val)
             return
 
         step_scale = 1.0 + (config.CYCLE_ZOOM_RATE * dt)
@@ -185,15 +198,9 @@ class InputHandler:
     ) -> Tuple[int, ...]:
         """Returns valid selectable channel indices for active mode."""
         if state.active_mode == 2:
-            preset = state.preset_2d
-            channels: List[int] = []
-            if preset.uses_base:
-                channels.append(0)
-            if preset.uses_relief:
-                channels.append(1)
-            if preset.uses_crust:
-                channels.append(2)
-            return tuple(channels) if channels else (0,)
+            channels = list(self._get_active_layers_2d(state))
+            channels.append(3)
+            return tuple(channels)
 
         formula = state.formula_1d
         channels = [0]
@@ -204,12 +211,49 @@ class InputHandler:
         channels.append(3)
         return tuple(channels)
 
+    def _get_active_layers_2d(self, state: InspectorState) -> Tuple[int, ...]:
+        """Returns valid layer channel indices excluding the budget row."""
+        preset = state.preset_2d
+        channels: List[int] = []
+        if preset.uses_base:
+            channels.append(0)
+        if preset.uses_relief:
+            channels.append(1)
+        if preset.uses_crust:
+            channels.append(2)
+        return tuple(channels) if channels else (0,)
+
+    def _cycle_layer_channel_2d(
+        self,
+        state: InspectorState,
+        direction: int,
+    ) -> None:
+        """Cycles horizontal channel focus across active 2D layers."""
+        layers = self._get_active_layers_2d(state)
+        if state.selected_panel_index in layers:
+            cur_pos = layers.index(state.selected_panel_index)
+            next_pos = (cur_pos + direction) % len(layers)
+            state.selected_panel_index = layers[next_pos]
+        else:
+            state.selected_panel_index = layers[0]
+        state.needs_rebuild_2d = True
+
     def _move_channel_focus(
         self,
         state: InspectorState,
         direction: int,
     ) -> None:
-        """Navigates focus across valid input channels for active mode."""
+        """Navigates focus vertically in Mode 2 or across panels in Mode 1."""
+        if state.active_mode == 2:
+            if state.selected_panel_index == 3:
+                state.selected_panel_index = self._get_active_layers_2d(state)[
+                    0
+                ]
+            else:
+                state.selected_panel_index = 3
+            state.needs_rebuild_2d = True
+            return
+
         channels = self._get_valid_channels(state)
         if state.selected_panel_index in channels:
             cur_pos = channels.index(state.selected_panel_index)
@@ -229,6 +273,8 @@ class InputHandler:
         state.selected_panel_index = channels[0]
         if state.active_mode == 1:
             state.needs_rebuild_1d = True
+        elif state.active_mode == 2:
+            state.needs_rebuild_2d = True
 
     def _reset_tuning(self, state: InspectorState, mods: int) -> None:
         """Resets all channels, or only focused channel when SHIFT held."""

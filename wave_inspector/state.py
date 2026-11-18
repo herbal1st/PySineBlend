@@ -31,6 +31,8 @@ class InspectorState:
     net_enabled: bool = config.DEFAULT_NET_ENABLED
     net_intervals: float = config.DEFAULT_NET_INTERVALS
     net_bandwidth: float = config.DEFAULT_NET_BANDWIDTH
+    crust_budget: float = config.CRUST_BUDGET
+    relief_budget: float = config.RELIEF_BUDGET
     base_cycles: float = config.DEFAULT_BASE_CYCLES
     relief_cycles: float = config.DEFAULT_RELIEF_CYCLES
     crust_cycles: float = config.DEFAULT_CRUST_CYCLES
@@ -67,6 +69,15 @@ class InspectorState:
             return spec.name, spec.lut, spec.description
 
         return f"[INV] {spec.name}", spec.inverted_lut, spec.description
+
+    def set_crust_budget(self, new_crust: float) -> None:
+        """Updates crust and relief budget within safe clamping bounds."""
+        clamped = max(
+            config.CRUST_BUDGET_MIN, min(config.CRUST_BUDGET_MAX, new_crust)
+        )
+        self.crust_budget = round(clamped, 4)
+        self.relief_budget = round(1.0 - self.crust_budget, 4)
+        self.mark_scrubbing()
 
     def mark_scrubbing(self) -> None:
         """Engages coarse scrubbing mode and resets the settle timer."""
@@ -115,6 +126,9 @@ class InspectorState:
             self.crust_cycles = config.DEFAULT_CRUST_CYCLES
             self.crust_offset_x = 0.0
             self.crust_offset_y = 0.0
+        if all_channels:
+            self.crust_budget = config.CRUST_BUDGET
+            self.relief_budget = config.RELIEF_BUDGET
 
         self.mark_discrete_change()
 

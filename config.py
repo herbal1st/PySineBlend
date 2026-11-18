@@ -33,9 +33,13 @@ RELIEF_START: float = 1.00  # height
 CRUST_START: float = 1.00  # height
 
 # ------ Mathematical Elevation Budgets ------
-CRUST_BUDGET: float = 0.4  # fraction
-RELIEF_BUDGET: float = 0.6  # fraction
+CRUST_BUDGET: float = 0.40  # fraction
+RELIEF_BUDGET: float = 0.60  # fraction
 MIN_RELIEF_FACTOR: float = 0.05  # fraction
+CRUST_BUDGET_MIN: float = 0.05  # fraction
+CRUST_BUDGET_MAX: float = 0.95  # fraction
+BUDGET_SCRUB_RATE: float = 0.50  # rate/sec
+MOUSE_BUDGET_SENSITIVITY: float = 0.0015  # rate/px
 
 # ------ Frequency Tuning Rates & Clamps ------
 CYCLE_ZOOM_RATE: float = 0.75  # rate

@@ -11,6 +11,8 @@ WaveFunction = Callable[
         NDArray[np.float32],
         NDArray[np.float32],
         NDArray[np.float32],
+        float,
+        float,
     ],
     NDArray[np.float32],
 ]
@@ -40,74 +42,158 @@ class Preset2D:
     composite_index: int
 
 
-def _solo_base(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
+def _solo_base(
+    b: NDArray,
+    r: NDArray,
+    c: NDArray,
+    cb: float,
+    rb: float,
+) -> NDArray:
     """Returns base wave component."""
     return b
 
 
-def _solo_relief(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
+def _solo_relief(
+    b: NDArray,
+    r: NDArray,
+    c: NDArray,
+    cb: float,
+    rb: float,
+) -> NDArray:
     """Returns relief multiplier component."""
     return r
 
 
-def _solo_crust(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
+def _solo_crust(
+    b: NDArray,
+    r: NDArray,
+    c: NDArray,
+    cb: float,
+    rb: float,
+) -> NDArray:
     """Returns continental crust component."""
     return c
 
 
-def _master_3_layer(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
+def _master_3_layer(
+    b: NDArray,
+    r: NDArray,
+    c: NDArray,
+    cb: float,
+    rb: float,
+) -> NDArray:
     """Calculates budgeted 3-layer additive elevation."""
     rf = config.MIN_RELIEF_FACTOR + ((1.0 - config.MIN_RELIEF_FACTOR) * r)
-    return (config.CRUST_BUDGET * c) + (config.RELIEF_BUDGET * b * rf)
+    return (cb * c) + (rb * b * rf)
 
 
-def _global_envelope(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
+def _global_envelope(
+    b: NDArray,
+    r: NDArray,
+    c: NDArray,
+    cb: float,
+    rb: float,
+) -> NDArray:
     """Scales crust and base elevation inside a global relief envelope."""
-    return r * ((config.CRUST_BUDGET * c) + (config.RELIEF_BUDGET * b))
+    return r * ((cb * c) + (rb * b))
 
 
-def _volcanic_island(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
+def _volcanic_island(
+    b: NDArray,
+    r: NDArray,
+    c: NDArray,
+    cb: float,
+    rb: float,
+) -> NDArray:
     """Calculates tectonic dome with dual-stage detail modulation."""
-    return (0.50 * c) + (0.40 * b * r) + (0.10 * b)
+    return (cb * c) + (rb * 0.80 * b * r) + (rb * 0.20 * b)
 
 
-def _inverse_crust_bypass(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
+def _inverse_crust_bypass(
+    b: NDArray,
+    r: NDArray,
+    c: NDArray,
+    cb: float,
+    rb: float,
+) -> NDArray:
     """Blends high relief into shoreline lowlands."""
     rmix = (c * r) + (1.0 - c)
-    return (config.CRUST_BUDGET * c) + (config.RELIEF_BUDGET * b * rmix)
+    return (cb * c) + (rb * b * rmix)
 
 
-def _dynamic_lerp(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
+def _dynamic_lerp(
+    b: NDArray,
+    r: NDArray,
+    c: NDArray,
+    cb: float,
+    rb: float,
+) -> NDArray:
     """Blends linearly between crust and detail via relief factor."""
     return ((1.0 - r) * c) + (r * b)
 
 
-def _tectonic_subduction(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
+def _tectonic_subduction(
+    b: NDArray,
+    r: NDArray,
+    c: NDArray,
+    cb: float,
+    rb: float,
+) -> NDArray:
     """Generates squared crust basin with modulated subduction belt."""
-    return (0.40 * (c * c)) + (0.60 * b * (r * c))
+    return (cb * (c * c)) + (rb * b * (r * c))
 
 
-def _factored_virtual_crust(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
+def _factored_virtual_crust(
+    b: NDArray,
+    r: NDArray,
+    c: NDArray,
+    cb: float,
+    rb: float,
+) -> NDArray:
     """Simulates tectonic floor and peaks using virtual crust scaling."""
-    return c * (config.CRUST_BUDGET + (config.RELIEF_BUDGET * b))
+    return c * (cb + (rb * b))
 
 
-def _tibetan_high_plateau(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
+def _tibetan_high_plateau(
+    b: NDArray,
+    r: NDArray,
+    c: NDArray,
+    cb: float,
+    rb: float,
+) -> NDArray:
     """Models high-altitude plateau with sinusoidal valley carving."""
-    return (np.power(c, 1.5) * 0.40) + (b * (0.60 * np.sin(c * np.pi)))
+    return (np.power(c, 1.5) * cb) + (b * (rb * np.sin(c * np.pi)))
 
 
-def _razor_ridge(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
+def _razor_ridge(
+    b: NDArray,
+    r: NDArray,
+    c: NDArray,
+    cb: float,
+    rb: float,
+) -> NDArray:
     """Sharpens base ridges via quadratic detail squaring."""
-    return (c * 0.40) + (0.60 * c * (b * b))
+    return (c * cb) + (rb * c * (b * b))
 
 
-def _inverted_canyonlands(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
+def _inverted_canyonlands(
+    b: NDArray,
+    r: NDArray,
+    c: NDArray,
+    cb: float,
+    rb: float,
+) -> NDArray:
     """Carves deep ravines via inverted crust modulation."""
-    return (c * 0.50) + (0.50 * (1.0 - (c * (1.0 - b))))
+    return (c * cb) + (rb * (1.0 - (c * (1.0 - b))))
 
 
-def _soft_natural_saturation(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
+def _soft_natural_saturation(
+    b: NDArray,
+    r: NDArray,
+    c: NDArray,
+    cb: float,
+    rb: float,
+) -> NDArray:
     """Compresses peaks using hyperbolic tangent saturation."""
     return np.tanh(2.5 * c * b) * 0.95
 
@@ -115,28 +201,28 @@ def _soft_natural_saturation(b: NDArray, r: NDArray, c: NDArray) -> NDArray:
 COMPOSITE_CATALOG: List[FormulaPreset] = [
     FormulaPreset(
         name="Master 3-Layer Budgeting",
-        shorthand="(0.35 * C) + (0.65 * B * (0.05 + 0.95 * R))",
+        shorthand="(CB * C) + (RB * B * (0.05 + 0.95 * R))",
         uses_relief=True,
         uses_crust=True,
         func=_master_3_layer,
     ),
     FormulaPreset(
         name="Global Envelope Factor",
-        shorthand="R * ((0.35 * C) + (0.65 * B))",
+        shorthand="R * ((CB * C) + (RB * B))",
         uses_relief=True,
         uses_crust=True,
         func=_global_envelope,
     ),
     FormulaPreset(
         name="Volcanic Island Override",
-        shorthand="(0.50 * C) + (0.40 * B * R) + (0.10 * B)",
+        shorthand="(CB * C) + (RB * 0.8 * B * R) + (RB * 0.2 * B)",
         uses_relief=True,
         uses_crust=True,
         func=_volcanic_island,
     ),
     FormulaPreset(
         name="Inverse Crust Bypass",
-        shorthand="(0.35 * C) + (0.65 * B * (C * R + (1.0 - C)))",
+        shorthand="(CB * C) + (RB * B * (C * R + (1.0 - C)))",
         uses_relief=True,
         uses_crust=True,
         func=_inverse_crust_bypass,
@@ -150,35 +236,35 @@ COMPOSITE_CATALOG: List[FormulaPreset] = [
     ),
     FormulaPreset(
         name="Tectonic Subduction Belt",
-        shorthand="(0.40 * (C**2)) + (0.60 * B * (R * C))",
+        shorthand="(CB * (C**2)) + (RB * B * (R * C))",
         uses_relief=True,
         uses_crust=True,
         func=_tectonic_subduction,
     ),
     FormulaPreset(
         name="Factored Virtual Crust",
-        shorthand="C * (0.40 + 0.60 * B)",
+        shorthand="C * (CB + RB * B)",
         uses_relief=False,
         uses_crust=True,
         func=_factored_virtual_crust,
     ),
     FormulaPreset(
         name="Tibetan High Plateau",
-        shorthand="(C**1.5 * 0.40) + (B * (0.60 * sin(C * pi)))",
+        shorthand="(C**1.5 * CB) + (B * (RB * sin(C * pi)))",
         uses_relief=False,
         uses_crust=True,
         func=_tibetan_high_plateau,
     ),
     FormulaPreset(
         name="Razor Ridge / Granite Peaks",
-        shorthand="(C * 0.40) + (0.60 * C * (B**2))",
+        shorthand="(C * CB) + (RB * C * (B**2))",
         uses_relief=False,
         uses_crust=True,
         func=_razor_ridge,
     ),
     FormulaPreset(
         name="Inverted Canyonlands",
-        shorthand="(C * 0.50) + (0.50 * (1.0 - C * (1.0 - B)))",
+        shorthand="(C * CB) + (RB * (1.0 - C * (1.0 - B)))",
         uses_relief=False,
         uses_crust=True,
         func=_inverted_canyonlands,
@@ -223,7 +309,7 @@ PRESETS_2D: List[Preset2D] = [
     ),
     Preset2D(
         name="Master 3-Layer Budgeting",
-        shorthand="(0.35 * C) + (0.65 * B * (0.05 + 0.95 * R))",
+        shorthand="(CB * C) + (RB * B * (0.05 + 0.95 * R))",
         uses_base=True,
         uses_relief=True,
         uses_crust=True,
@@ -232,7 +318,7 @@ PRESETS_2D: List[Preset2D] = [
     ),
     Preset2D(
         name="Global Envelope Factor",
-        shorthand="R * ((0.35 * C) + (0.65 * B))",
+        shorthand="R * ((CB * C) + (RB * B))",
         uses_base=True,
         uses_relief=True,
         uses_crust=True,
@@ -241,7 +327,7 @@ PRESETS_2D: List[Preset2D] = [
     ),
     Preset2D(
         name="Volcanic Island Override",
-        shorthand="(0.50 * C) + (0.40 * B * R) + (0.10 * B)",
+        shorthand="(CB * C) + (RB * 0.8 * B * R) + (RB * 0.2 * B)",
         uses_base=True,
         uses_relief=True,
         uses_crust=True,
@@ -250,7 +336,7 @@ PRESETS_2D: List[Preset2D] = [
     ),
     Preset2D(
         name="Inverse Crust Bypass",
-        shorthand="(0.35 * C) + (0.65 * B * (C * R + (1.0 - C)))",
+        shorthand="(CB * C) + (RB * B * (C * R + (1.0 - C)))",
         uses_base=True,
         uses_relief=True,
         uses_crust=True,
@@ -268,7 +354,7 @@ PRESETS_2D: List[Preset2D] = [
     ),
     Preset2D(
         name="Tectonic Subduction Belt",
-        shorthand="(0.40 * (C**2)) + (0.60 * B * (R * C))",
+        shorthand="(CB * (C**2)) + (RB * B * (R * C))",
         uses_base=True,
         uses_relief=True,
         uses_crust=True,
@@ -277,7 +363,7 @@ PRESETS_2D: List[Preset2D] = [
     ),
     Preset2D(
         name="Factored Virtual Crust",
-        shorthand="C * (0.40 + 0.60 * B)",
+        shorthand="C * (CB + RB * B)",
         uses_base=True,
         uses_relief=False,
         uses_crust=True,
@@ -286,7 +372,7 @@ PRESETS_2D: List[Preset2D] = [
     ),
     Preset2D(
         name="Tibetan High Plateau",
-        shorthand="(C**1.5 * 0.40) + (B * (0.60 * sin(C * pi)))",
+        shorthand="(C**1.5 * CB) + (B * (RB * sin(C * pi)))",
         uses_base=True,
         uses_relief=False,
         uses_crust=True,
@@ -295,7 +381,7 @@ PRESETS_2D: List[Preset2D] = [
     ),
     Preset2D(
         name="Razor Ridge / Granite Peaks",
-        shorthand="(C * 0.40) + (0.60 * C * (B**2))",
+        shorthand="(C * CB) + (RB * C * (B**2))",
         uses_base=True,
         uses_relief=False,
         uses_crust=True,
@@ -304,7 +390,7 @@ PRESETS_2D: List[Preset2D] = [
     ),
     Preset2D(
         name="Inverted Canyonlands",
-        shorthand="(C * 0.50) + (0.50 * (1.0 - C * (1.0 - B)))",
+        shorthand="(C * CB) + (RB * (1.0 - C * (1.0 - B)))",
         uses_base=True,
         uses_relief=False,
         uses_crust=True,

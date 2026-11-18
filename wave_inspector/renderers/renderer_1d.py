@@ -106,8 +106,7 @@ class Renderer1D(BaseRenderer):
             c_title = (
                 f"PANEL 3: CONTINENTAL CRUST C(x){c_tag} | "
                 f"CYCLES: {state.crust_cycles:.2f} | "
-                f"START: {config.CRUST_START:.2f} | "
-                f"BUDGET: {config.CRUST_BUDGET:.2f}"
+                f"START: {config.CRUST_START:.2f}"
             )
             c_data = frame.crust
             c_silenced = False
@@ -136,11 +135,15 @@ class Renderer1D(BaseRenderer):
         layer_tag = "3-LAYER" if is_3layer else "2-LAYER"
         p4_selected = state.selected_panel_index == 3
         p4_tag = " [ALL ACTIVE]" if p4_selected else ""
+        bdg_str = (
+            f"BUDGET: [ {state.crust_budget:.2f} C / "
+            f"{state.relief_budget:.2f} R ]"
+        )
         p4_title = (
             f"PANEL 4: [{state.composite_index + 1}/"
             f"{len(COMPOSITE_CATALOG)}] [{layer_tag}] "
             f"{formula.name}{p4_tag}: {formula.shorthand} | "
-            f"RANGE: [{min_v:.3f}, {max_v:.3f}]"
+            f"RANGE: [{min_v:.3f}, {max_v:.3f}] | {bdg_str}"
         )
         self._draw_panel(
             panel_index=3,

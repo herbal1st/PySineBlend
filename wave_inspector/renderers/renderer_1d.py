@@ -33,6 +33,10 @@ class Renderer1D(BaseRenderer):
         self.cached_surface: pygame.Surface = pygame.Surface(
             (self.width, self.height)
         )
+        self._fill_draw_h: int = 0
+        self._fill_y_rows: Optional[NDArray[np.int32]] = None
+        self._fill_mask: Optional[NDArray[np.bool_]] = None
+        self._fill_rgb: Optional[NDArray[np.uint8]] = None
 
     def update_surface(
         self,
@@ -53,14 +57,13 @@ class Renderer1D(BaseRenderer):
             line_lut = None
             net_status = "COLOR FILL"
 
-        b_tag = " [ACTIVE]" if state.selected_panel_index == 0 else ""
         b_step = (
             f" [STEP: {state.tile_size}px]"
             if state.tile_stepping_enabled
             else ""
         )
         b_title = (
-            f"PANEL 1: BASE DETAIL WAVE D(x){b_tag}{b_step} | "
+            f"PANEL 1: BASE DETAIL WAVE D(x){b_step} | "
             f"CYCLES: {state.base_cycles:.1f} | "
             f"START: {config.BASE_START:.2f}"
         )
@@ -73,9 +76,8 @@ class Renderer1D(BaseRenderer):
         )
 
         if formula.uses_relief:
-            r_tag = " [ACTIVE]" if state.selected_panel_index == 1 else ""
             r_title = (
-                f"PANEL 2: RELIEF MULTIPLIER M(x){r_tag} | "
+                f"PANEL 2: RELIEF MULTIPLIER M(x) | "
                 f"CYCLES: {state.relief_cycles:.1f} | "
                 f"START: {config.RELIEF_START:.2f} | "
                 f"MIN_RELIEF: {config.MIN_RELIEF_FACTOR:.2f}"
@@ -102,9 +104,8 @@ class Renderer1D(BaseRenderer):
         )
 
         if formula.uses_crust:
-            c_tag = " [ACTIVE]" if state.selected_panel_index == 2 else ""
             c_title = (
-                f"PANEL 3: CONTINENTAL CRUST C(x){c_tag} | "
+                f"PANEL 3: CONTINENTAL CRUST C(x) | "
                 f"CYCLES: {state.crust_cycles:.2f} | "
                 f"START: {config.CRUST_START:.2f}"
             )
@@ -134,7 +135,6 @@ class Renderer1D(BaseRenderer):
         is_3layer = formula.uses_relief and formula.uses_crust
         layer_tag = "3-LAYER" if is_3layer else "2-LAYER"
         p4_selected = state.selected_panel_index == 3
-        p4_tag = " [ALL ACTIVE]" if p4_selected else ""
         bdg_str = (
             f"BUDGET: [ {state.crust_budget:.2f} C / "
             f"{state.relief_budget:.2f} R ]"
@@ -142,7 +142,7 @@ class Renderer1D(BaseRenderer):
         p4_title = (
             f"PANEL 4: [{state.composite_index + 1}/"
             f"{len(COMPOSITE_CATALOG)}] [{layer_tag}] "
-            f"{formula.name}{p4_tag}: {formula.shorthand} | "
+            f"{formula.name}: {formula.shorthand} | "
             f"RANGE: [{min_v:.3f}, {max_v:.3f}] | {bdg_str}"
         )
         self._draw_panel(
@@ -245,14 +245,6 @@ class Renderer1D(BaseRenderer):
                 line_width,
             )
 
-        if is_selected:
-            pygame.draw.rect(
-                self.cached_surface,
-                config.COLOR_SELECTION,
-                (1, y_top + 1, self.width - 2, panel_h - 2),
-                _PANEL_SELECTION_WIDTH,
-            )
-
         title_color = (
             config.COLOR_INPUT_ACTIVE
             if is_selected
@@ -277,6 +269,14 @@ class Renderer1D(BaseRenderer):
             title_surf,
             (tx + _PANEL_TITLE_TEXT_X, ty + _PANEL_TITLE_TEXT_Y),
         )
+
+        if is_selected:
+            pygame.draw.rect(
+                self.cached_surface,
+                config.COLOR_SELECTION,
+                (tx, ty, box_w, box_h),
+                _PANEL_SELECTION_WIDTH,
+            )
 
     def _render_vectorized_line(
         self,
@@ -327,28 +327,47 @@ class Renderer1D(BaseRenderer):
         y_draw_max: int,
         int_draw_h: int,
     ) -> None:
-        """Blits columnar hypsometric fills via vectorized NumPy buffer."""
+        """Paints columnar hypsometric fills directly into cached surface."""
+        self._ensure_fill_scratch(int_draw_h)
+        assert self._fill_y_rows is not None
+        assert self._fill_mask is not None
+        assert self._fill_rgb is not None
+
         lut_idx = np.clip(wave_data * 1023.0, 0, 1023).astype(np.int32)
         cols_rgb = fill_lut[lut_idx]
 
         h_pixels = np.round(wave_data * float(int_draw_h)).astype(np.int32)
         h_clamped = np.clip(h_pixels, 0, int_draw_h)
+        threshold = (int_draw_h - h_clamped)[:, None]
 
-        y_indices = np.arange(int_draw_h, dtype=np.int32)[:, None]
-        active_mask = y_indices >= (int_draw_h - h_clamped[None, :])
+        np.greater_equal(self._fill_y_rows, threshold, out=self._fill_mask)
+        self._fill_rgb[:] = config.BACKGROUND_COLOR
 
-        bg_rgb = np.array(config.BACKGROUND_COLOR, dtype=np.uint8)
-        buffer = np.full(
-            (int_draw_h, self.width, 3), bg_rgb, dtype=np.uint8
+        cols_bcast = np.broadcast_to(
+            cols_rgb[:, None, :], (self.width, int_draw_h, 3)
         )
-        broadcast_cols = np.broadcast_to(
-            cols_rgb[None, :, :], (int_draw_h, self.width, 3)
+        np.copyto(
+            self._fill_rgb, cols_bcast, where=self._fill_mask[:, :, None]
         )
-        np.copyto(buffer, broadcast_cols, where=active_mask[:, :, None])
 
-        surf_transposed = np.transpose(buffer, (1, 0, 2))
-        fill_surface = pygame.surfarray.make_surface(surf_transposed)
-        self.cached_surface.blit(fill_surface, (0, y_draw_max))
+        surf_view = pygame.surfarray.pixels3d(self.cached_surface)
+        try:
+            surf_view[:, y_draw_max : y_draw_max + int_draw_h] = (
+                self._fill_rgb
+            )
+        finally:
+            del surf_view
+
+    def _ensure_fill_scratch(self, int_draw_h: int) -> None:
+        """Lazily allocates reusable (W, H) buffers for Panel 4 fills."""
+        if self._fill_draw_h == int_draw_h and self._fill_rgb is not None:
+            return
+        self._fill_draw_h = int_draw_h
+        self._fill_y_rows = np.arange(
+            int_draw_h, dtype=np.int32
+        )[None, :]
+        self._fill_mask = np.empty((self.width, int_draw_h), dtype=bool)
+        self._fill_rgb = np.empty((self.width, int_draw_h, 3), dtype=np.uint8)
 
     def _draw_palette_card(self, text: str) -> None:
         """Renders active palette info in bottom-right footer of Panel 4."""

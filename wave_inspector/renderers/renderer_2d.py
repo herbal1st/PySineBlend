@@ -250,7 +250,7 @@ class Renderer2D(BaseRenderer):
         state: InspectorState,
     ) -> None:
         """Draws channel strip and records clickable layer hitboxes."""
-        col_active = (85, 155, 255)
+        col_active = config.COLOR_INPUT_ACTIVE
         col_muted = (140, 145, 155)
         col_divider = (80, 85, 95)
         col_label = (220, 220, 220)
@@ -314,7 +314,7 @@ class Renderer2D(BaseRenderer):
         bdg_val = (
             f"[ {state.crust_budget:.2f} C / {state.relief_budget:.2f} R ]"
         )
-        bdg_col = config.COLOR_INPUT_ACTIVE if is_bdg_focus else col_muted
+        bdg_col = col_active if is_bdg_focus else col_muted
         bdg_lbl_surf = self.font.render(bdg_label, True, col_label)
         bdg_val_surf = self.font.render(bdg_val, True, bdg_col)
         row2_w = bdg_lbl_surf.get_width() + bdg_val_surf.get_width()
@@ -339,9 +339,20 @@ class Renderer2D(BaseRenderer):
         for surf, ch_id in rendered:
             self.screen.blit(surf, (curr_x, y + pad))
             if ch_id is not None:
-                state.channel_hitboxes[ch_id] = pygame.Rect(
-                    curr_x - 4, y + pad - 2, surf.get_width() + 8, line_h + 4
+                hitbox = pygame.Rect(
+                    curr_x - 4,
+                    y + pad - 2,
+                    surf.get_width() + 8,
+                    line_h + 4,
                 )
+                state.channel_hitboxes[ch_id] = hitbox
+                if state.selected_panel_index == ch_id:
+                    pygame.draw.rect(
+                        self.screen,
+                        config.COLOR_SELECTION,
+                        hitbox,
+                        2,
+                    )
             curr_x += surf.get_width()
 
         r2_y = y + pad + line_h + 6

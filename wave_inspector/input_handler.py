@@ -287,17 +287,25 @@ class InputHandler:
         factor: float,
         single_layer: bool,
     ) -> None:
-        """Scales all wave channels, or only focused one when single_layer."""
+        """Scales active wave channels proportionally, or one with SHIFT."""
         safe_factor = max(1e-6, factor)
         scale_all = (not single_layer) or (
             state.active_mode == 1 and state.selected_panel_index == 3
         )
+        eff_factor = (
+            self._clamp_group_factor(state, safe_factor)
+            if scale_all
+            else safe_factor
+        )
+        if scale_all and abs(eff_factor - 1.0) <= 1e-7:
+            return
+
         anchor_2d = state.active_mode == 2
 
         if scale_all or state.selected_panel_index == 0:
             old_base = state.base_cycles
             new_base = self._clamp(
-                old_base / safe_factor,
+                old_base / eff_factor,
                 config.BASE_MIN_CYCLES,
                 config.BASE_MAX_CYCLES,
             )
@@ -309,7 +317,7 @@ class InputHandler:
         if scale_all or state.selected_panel_index == 1:
             old_relief = state.relief_cycles
             new_relief = self._clamp(
-                old_relief / safe_factor,
+                old_relief / eff_factor,
                 config.RELIEF_MIN_CYCLES,
                 config.RELIEF_MAX_CYCLES,
             )
@@ -321,7 +329,7 @@ class InputHandler:
         if scale_all or state.selected_panel_index == 2:
             old_crust = state.crust_cycles
             new_crust = self._clamp(
-                old_crust / safe_factor,
+                old_crust / eff_factor,
                 config.CRUST_MIN_CYCLES,
                 config.CRUST_MAX_CYCLES,
             )
@@ -335,6 +343,44 @@ class InputHandler:
                 )
                 if anchor_2d and is_warped_2layer:
                     state.crust_offset_y *= old_crust / new_crust
+
+    def _clamp_group_factor(
+        self,
+        state: InspectorState,
+        factor: float,
+    ) -> float:
+        """Clamps zoom factor so all active layers preserve cycle ratios."""
+        if state.active_mode == 2:
+            layers = self._get_active_layers_2d(state)
+        else:
+            layers = tuple(
+                ch for ch in self._get_valid_channels(state) if ch != 3
+            )
+
+        bounds = {
+            0: (
+                state.base_cycles,
+                config.BASE_MIN_CYCLES,
+                config.BASE_MAX_CYCLES,
+            ),
+            1: (
+                state.relief_cycles,
+                config.RELIEF_MIN_CYCLES,
+                config.RELIEF_MAX_CYCLES,
+            ),
+            2: (
+                state.crust_cycles,
+                config.CRUST_MIN_CYCLES,
+                config.CRUST_MAX_CYCLES,
+            ),
+        }
+        active_bounds = [bounds[ch] for ch in layers if ch in bounds]
+        if not active_bounds:
+            return factor
+
+        min_f = max(val / max_v for val, _, max_v in active_bounds)
+        max_f = min(val / min_v for val, min_v, _ in active_bounds)
+        return max(min_f, min(max_f, factor)) if min_f <= max_f else factor
 
     @staticmethod
     def _clamp(value: float, min_limit: float, max_limit: float) -> float:

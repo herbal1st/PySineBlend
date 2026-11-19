@@ -1,5 +1,5 @@
 ```
- ____           ____                        ____    ___                  __   
+ ____           ____                        ____    ___                      __   
 /\  _`\        /\  _`\   __                /\  _`\ /\_ \                    /\ \  
 \ \ \L\ \__  __\ \,\L\_\/\_\    ___      __\ \ \L\ \//\ \      __    ___    \_\ \ 
  \ \ ,__/\ \/\ \\/_\__ \\/\ \ /' _ `\  /'__`\ \  _ <'\ \ \   /'__`\/' _ `\  /'_` \
@@ -109,17 +109,18 @@ Presents four vertically stacked real-time oscilloscope panels:
     - Panel 1: Base Detail wave D(x).
     - Panel 2: Relief Multiplier envelope M(x).
     - Panel 3: Continental Crust tectonic floor C(x).
-    - Panel 4: Composite Result from the active formula ([ALL ACTIVE]),
-               displaying the live BUDGET: [ 0.40 C / 0.60 R ] readout.
+    - Panel 4: Composite Result from the active formula, displaying the live
+               BUDGET: [ 0.40 C / 0.60 R ] readout.
 
 Smart Panel Selection & Live Budget Scrubbing:
 Click directly on Panel 1, 2, 3, or 4 with either mouse button (or cycle with
 UP/DOWN) to select focus. On 2-layer formulas where Relief is silenced, clicks
 on Panel 2 are safely ignored and UP/DOWN skips straight between Panels 1, 3,
-and 4. Selecting Panel 4 highlights it in blue with [ALL ACTIVE]: dragging
-with RMB or holding LEFT/RIGHT arrows smoothly shifts the Crust/Relief
-elevation budget in real time, while SHIFT + Right-Drag / Left-Drag adjusts
-all three wave layers together.
+and 4. The active panel's top-left title card highlights with a blue frame
+and cyan text without shifting its layout. Selecting Panel 4 lets you drag
+with RMB or hold LEFT/RIGHT arrows to shift the Crust/Relief elevation budget
+in real time, while SHIFT + Right-Drag / Left-Drag adjusts all three wave
+layers together.
 
 Panel 4 Dual-Mode Visualization:
     - Standard Mode: Renders a solid hypsometric color fill under the curve
@@ -127,10 +128,12 @@ Panel 4 Dual-Mode Visualization:
     - Net Mode (Key [N]): Replaces the fill with a crisp, multi-colored vector
                      trace line colored according to height.
 
-Idle Frame Caching:
+Idle Frame Caching & In-Place Fill:
 Mode 1 renders its four panels, fills, and trace lines onto an offscreen
 cached surface and only rebuilds when wave frequencies, budgets, offsets,
-focus, formulas, stepping, or palettes change. While idle, redrawing the
+focus, formulas, stepping, or palettes change. Both the solid fill and the
+Net trace paint directly into that cached surface using reusable scratch
+buffers with zero temporary surface allocations. While idle, redrawing the
 viewport takes a single surface copy.
 
 
@@ -144,7 +147,7 @@ Projects wave roles across a continuous 2D surface on a 16:9 canvas:
                              or pond), or Horizontal Bands along Y when
                              Warped ([P]) is active on a 2-layer formula.
 
-2D Positioning, Consistent Circular Ponds & Zoom Anchoring:
+2D Positioning, Consistent Circular Ponds & Proportional Zoom:
 Plain Left-Drag pans all wave layers together 1:1 with the cursor. Holding
 SHIFT + Left-Drag moves only the selected layer: Base slides vertical
 stripes left/right, Relief slides horizontal bands up/down, and Crust moves
@@ -157,19 +160,23 @@ Zooming also stays visually predictable: linear waves (Base stripes, Relief
 bands, and 2-layer Warped Crust bands) zoom around the center of the screen
 so patterns do not drift toward a corner, while off-center circular Crust
 domes stay anchored on their own circle centers so ripples grow and shrink
-right around the pond you placed.
+right around the pond you placed. When zooming all active layers together, a
+shared limit clamp stops scaling at the first layer boundary hit so wave
+frequency ratios stay locked at both zoom extremes (hold SHIFT to push an
+individual layer to its own min/max limit).
 
 Dual-Row Channel & Budget Card:
 Below the top HUD card sits the blue-bordered Channel & Budget card:
     - Top Row (CHANNEL FOCUS): Displays B, R, and C cycle counts. Click any
-      active letter or press SHIFT + UP/DOWN to switch between layers.
-      Inactive channels (such as R: Silenced on 2-layer formulas) ignore
-      clicks automatically.
+      active letter or press SHIFT + UP/DOWN to switch between layers; the
+      active channel is framed in blue with cyan text. Inactive channels (such
+      as R: Silenced on 2-layer formulas) ignore clicks automatically.
     - Bottom Row (BUDGET): Displays [ 0.40 C / 0.60 R ]. Press UP/DOWN (or
       click directly on the budget cell) to jump between the channel row and
-      the budget row. When focused, dragging horizontally with RMB or holding
-      LEFT/RIGHT arrows smoothly shifts the tectonic Crust/Relief split using
-      dampened mouse sensitivity so movements stay steady even on slower PCs.
+      the budget row, framing the budget cell in blue. When focused, dragging
+      horizontally with RMB or holding LEFT/RIGHT arrows smoothly shifts the
+      tectonic Crust/Relief split using dampened mouse sensitivity so
+      movements stay steady even on slower PCs.
 
 Perspective / Projection Geometry (Key [P]):
 Pressing [P] toggles between two spatial projection models at runtime:
@@ -322,8 +329,8 @@ selected layer.
     TAB / SHIFT + TAB   : Cycle to next / previous formula preset.
 
     UP / DOWN           : - Mode 1: Switch panel focus (Panel 1 -> Panel 2 ->
-                            Panel 3 -> Panel 4 [ALL ACTIVE]). Automatically
-                            skips silenced Panel 2 on 2-layer formulas.
+                            Panel 3 -> Panel 4). Automatically skips silenced
+                            Panel 2 on 2-layer formulas.
                           - Mode 2: Toggle vertical focus between the Channel
                             Focus row and the Elevation Budget row.
 
@@ -339,18 +346,19 @@ selected layer.
     SHIFT + LEFT DRAG   : Move ONLY the currently selected layer (or all when
                           Panel 4 / Budget is selected).
 
-    RIGHT DRAG          : - On Wave Layers: Proportionally zoom ALL wave
-                            channels together (drag right to zoom IN / wider
-                            features; drag left to zoom OUT / denser features).
+    RIGHT DRAG          : - On Wave Layers: Proportionally zoom ALL active
+                            wave channels together, preserving frequency ratios
+                            (drag right to zoom IN / wider features; drag left
+                            to zoom OUT / denser features).
                           - On Panel 4 (Mode 1) or Budget Row (Mode 2):
                             Smoothly scrub the Crust/Relief elevation budget
                             with gentle, dampened mouse sensitivity.
     SHIFT + RIGHT DRAG  : Zoom ONLY the currently selected wave layer.
 
     HOLD RIGHT / LEFT   : Keyboard mirror of Right-Drag:
-                          - On Wave Layers: Zoom ALL channels together (Right
-                            = zoom IN / wider waves; Left = zoom OUT / denser
-                            waves).
+                          - On Wave Layers: Proportionally zoom ALL active
+                            channels together (Right = zoom IN / wider waves;
+                            Left = zoom OUT / denser waves).
                           - On Panel 4 (Mode 1) or Budget Row (Mode 2):
                             Continuously shift the Crust/Relief budget split.
     SHIFT + RIGHT / LEFT: Zoom ONLY the currently selected wave layer.
